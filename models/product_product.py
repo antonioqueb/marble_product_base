@@ -17,8 +17,8 @@ class ProductProduct(models.Model):
         help='Indica si este producto fue generado automáticamente desde una plantilla de mármol'
     )
     
-    # ✅ ACTUALIZACIÓN: Referencia al prototipo en lugar del template padre directo
-    marble_prototype_template_id = fields.Many2one(
+    # ✅ MANTENER NOMBRE ORIGINAL para compatibilidad con vistas existentes
+    marble_parent_template_id = fields.Many2one(
         'product.template',
         string='Plantilla Prototipo',
         help='Plantilla prototipo de mármol desde la cual se generó este producto',
@@ -215,7 +215,7 @@ class ProductProduct(models.Model):
         # 4. Escribir los datos específicos del product.product en la variante
         product_variant.write({
             'is_generated_marble_product': True,
-            'marble_prototype_template_id': PrototypeTemplate.id, # Referencia al prototipo
+            'marble_parent_template_id': PrototypeTemplate.id, # Referencia al prototipo
             'marble_serial_number': serial_number,
             'marble_status': 'draft',
             'marble_creation_date': fields.Datetime.now(),
