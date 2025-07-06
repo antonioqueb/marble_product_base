@@ -44,6 +44,7 @@
         'views/packing_list_import_views.xml',
         'views/packing_list_import_wizard_views.xml',
         'views/purchase_order_views.xml',
+        'views/stock_picking_views.xml',
         'views/menu_views.xml',
     ],
     'demo': [

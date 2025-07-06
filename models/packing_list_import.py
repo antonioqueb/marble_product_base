@@ -213,6 +213,9 @@ class PackingListImport(models.Model):
         self.state = 'processed'
         self.purchase_order_id.packing_list_imported = True
         
+        # ✅ NUEVA FUNCIONALIDAD: Notificar a las recepciones pendientes
+        self._notify_pending_receptions()
+        
         # Mostrar productos creados
         return {
             'type': 'ir.actions.act_window',
@@ -222,6 +225,36 @@ class PackingListImport(models.Model):
             'domain': [('id', 'in', [p.id for p in created_products])],
             'context': {'create': False}
         }
+    
+    # ✅ NUEVO MÉTODO para notificar recepciones pendientes
+    def _notify_pending_receptions(self):
+        """Notificar a las recepciones pendientes que hay productos de packing list disponibles"""
+        # Buscar recepciones pendientes de esta orden de compra
+        pending_pickings = self.env['stock.picking'].search([
+            ('purchase_id', '=', self.purchase_order_id.id),
+            ('picking_type_id.code', '=', 'incoming'),
+            ('state', 'in', ['assigned', 'confirmed', 'waiting']),
+            ('packing_list_applied', '=', False)
+        ])
+        
+        if pending_pickings:
+            # Crear actividad para recordar aplicar los productos
+            for picking in pending_pickings:
+                picking.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    summary=f'Aplicar productos de packing list - {self.display_name}',
+                    note=f'''
+                        El packing list {self.display_name} ha sido procesado y los productos únicos están listos.
+                        
+                        Use el botón "Aplicar Productos de Packing List" en la recepción {picking.name} 
+                        para reemplazar las plantillas con los productos específicos antes de validar.
+                        
+                        Productos generados: {len(self.line_ids)} placas únicas
+                    ''',
+                    user_id=self.env.user.id
+                )
+            
+            _logger.info(f"Notificadas {len(pending_pickings)} recepciones pendientes para aplicar productos del packing list {self.display_name}")
     
     def _find_marble_template(self, product_name):
         """

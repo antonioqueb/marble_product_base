@@ -30,6 +30,13 @@ class StockPicking(models.Model):
         help='Indica si la recepción de productos de mármol está completa'
     )
     
+    # ✅ NUEVO CAMPO para controlar si ya se aplicaron los productos del packing list
+    packing_list_applied = fields.Boolean(
+        string='Packing List Aplicado',
+        default=False,
+        help='Indica si los productos del packing list ya fueron aplicados a esta recepción'
+    )
+    
     @api.depends('move_ids.product_id.is_generated_marble_product')
     def _compute_has_marble_products(self):
         """Determinar si contiene productos de mármol"""
@@ -39,10 +46,144 @@ class StockPicking(models.Model):
                 for move in picking.move_ids
             )
     
+    # ✅ MÉTODO CORREGIDO para Odoo 18
+    def action_apply_packing_list_products(self):
+        """
+        Aplicar productos únicos del packing list a esta recepción
+        Reemplaza las líneas de plantillas con productos específicos
+        """
+        self.ensure_one()
+        
+        if not self.purchase_id:
+            raise UserError("Esta transferencia debe estar asociada a una orden de compra.")
+        
+        if self.packing_list_applied:
+            raise UserError("Los productos del packing list ya han sido aplicados a esta recepción.")
+        
+        # Buscar packing lists procesados de la orden de compra
+        packing_lists = self.env['packing.list.import'].search([
+            ('purchase_order_id', '=', self.purchase_id.id),
+            ('state', '=', 'processed')
+        ])
+        
+        if not packing_lists:
+            raise UserError("No hay packing lists procesados para esta orden de compra.")
+        
+        # Obtener todos los productos únicos creados desde los packing lists
+        generated_products = self.env['product.product'].search([
+            ('packing_list_import_line_id', 'in', packing_lists.line_ids.ids)
+        ])
+        
+        if not generated_products:
+            raise UserError("No se encontraron productos únicos generados desde los packing lists.")
+        
+        # Eliminar movimientos existentes de plantillas de mármol
+        marble_template_moves = self.move_ids.filtered(
+            lambda m: m.product_id.is_marble_template
+        )
+        
+        if marble_template_moves:
+            # Cancelar primero los movimientos existentes
+            marble_template_moves.filtered(lambda m: m.state not in ['done', 'cancel'])._action_cancel()
+            # Eliminar los movimientos cancelados
+            marble_template_moves.unlink()
+        
+        # Crear nuevos movimientos para cada producto único
+        for product in generated_products:
+            # Verificar que el producto tenga un lote/número de serie
+            lot = self.env['stock.lot'].search([
+                ('product_id', '=', product.id),
+                ('name', '=', product.marble_serial_number)
+            ], limit=1)
+            
+            if not lot:
+                # Crear el lote si no existe
+                lot = self.env['stock.lot'].create({
+                    'name': product.marble_serial_number,
+                    'product_id': product.id,
+                    'company_id': self.company_id.id,
+                })
+            
+            # Crear movimiento de stock para este producto
+            move_vals = {
+                'name': f"Recepción: {product.name}",
+                'product_id': product.id,
+                'product_uom_qty': 1,  # Siempre 1 unidad por producto único
+                'product_uom': product.uom_id.id,
+                'picking_id': self.id,
+                'picking_type_id': self.picking_type_id.id,
+                'location_id': self.location_id.id,
+                'location_dest_id': self.location_dest_id.id,
+                'state': 'assigned',  # Ya está listo para validar
+                'company_id': self.company_id.id,
+                'purchase_line_id': self._find_matching_purchase_line(product),
+            }
+            
+            move = self.env['stock.move'].create(move_vals)
+            
+            # ✅ CORRECCIÓN: Usar campos correctos para Odoo 18
+            move_line_vals = {
+                'move_id': move.id,
+                'product_id': product.id,
+                'product_uom_id': product.uom_id.id,
+                'quantity': 1,  # ✅ Cambiado de 'qty_done' a 'quantity'
+                'lot_id': lot.id,
+                'location_id': self.location_id.id,
+                'location_dest_id': self.location_dest_id.id,
+                'picking_id': self.id,
+                'company_id': self.company_id.id,
+            }
+            
+            move_line = self.env['stock.move.line'].create(move_line_vals)
+            
+            # ✅ NUEVO: Asegurar que el movimiento tenga la cantidad correcta
+            move.quantity = 1
+            
+            _logger.info(f"Movimiento creado para producto único: {product.name} con lote: {lot.name}")
+        
+        # Marcar como aplicado
+        self.packing_list_applied = True
+        self.packing_list_id = packing_lists[0].id  # Asociar el primer packing list
+        
+        # Actualizar estado de los productos a 'draft' si están en otro estado
+        generated_products.filtered(lambda p: p.marble_status != 'draft').write({'marble_status': 'draft'})
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': f"Se aplicaron {len(generated_products)} productos únicos de mármol a la recepción.",
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+    
+    def _find_matching_purchase_line(self, product):
+        """Encontrar la línea de compra correspondiente para un producto único"""
+        if not self.purchase_id or not product.marble_parent_template_id:
+            return False
+        
+        # Buscar línea de compra que tenga la plantilla padre
+        purchase_line = self.purchase_id.order_line.filtered(
+            lambda l: l.product_id.id == product.marble_parent_template_id.id
+        )
+        
+        return purchase_line[0].id if purchase_line else False
+    
     def button_validate(self):
         """
         Sobrescribir validación para manejar productos de mármol
         """
+        # ✅ VERIFICAR si hay productos de packing list pendientes de aplicar
+        if self.picking_type_id.code == 'incoming' and self.purchase_id:
+            # Verificar si hay packing lists procesados pero no aplicados
+            if self._has_processed_packing_lists() and not self.packing_list_applied:
+                # Auto-aplicar productos del packing list
+                try:
+                    self.action_apply_packing_list_products()
+                except Exception as e:
+                    _logger.warning(f"No se pudieron aplicar automáticamente los productos del packing list: {str(e)}")
+        
         # Procesar lógica específica de mármol antes de la validación estándar
         if self.picking_type_id.code == 'incoming':
             self._handle_marble_incoming_validation()
@@ -57,6 +198,18 @@ class StockPicking(models.Model):
             self._auto_archive_zero_stock_marble_products()
         
         return res
+    
+    def _has_processed_packing_lists(self):
+        """Verificar si hay packing lists procesados para esta orden de compra"""
+        if not self.purchase_id:
+            return False
+        
+        packing_lists = self.env['packing.list.import'].search([
+            ('purchase_order_id', '=', self.purchase_id.id),
+            ('state', '=', 'processed')
+        ])
+        
+        return len(packing_lists) > 0
     
     def _handle_marble_incoming_validation(self):
         """
@@ -163,40 +316,6 @@ class StockPicking(models.Model):
             'view_mode': 'list,form',
             'domain': [('id', 'in', marble_products.ids)],
             'context': {'create': False}
-        }
-    
-    def action_create_marble_reception(self):
-        """
-        Crear recepción especial para productos de mármol desde packing list
-        """
-        self.ensure_one()
-        
-        if self.picking_type_id.code != 'incoming':
-            raise UserError("Esta acción solo está disponible para recepciones.")
-        
-        if not self.purchase_id:
-            raise UserError("Esta transferencia debe estar asociada a una orden de compra.")
-        
-        # Buscar packing lists de la orden de compra
-        packing_lists = self.env['packing.list.import'].search([
-            ('purchase_order_id', '=', self.purchase_id.id),
-            ('state', '=', 'processed')
-        ])
-        
-        if not packing_lists:
-            raise UserError("No hay packing lists procesados para esta orden de compra.")
-        
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Seleccionar Packing List',
-            'res_model': 'packing.list.import',
-            'view_mode': 'list,form',
-            'domain': [('id', 'in', packing_lists.ids)],
-            'target': 'new',
-            'context': {
-                'default_picking_id': self.id,
-                'select_for_reception': True
-            }
         }
 
 
