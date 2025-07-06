@@ -14,6 +14,19 @@ class ProductTemplate(models.Model):
         help='Indica si este producto es una plantilla base para crear productos únicos de mármol'
     )
     
+    # ✅ NUEVOS CAMPOS para la solución
+    is_generated_marble_template = fields.Boolean(
+        string='Plantilla de Mármol Generada',
+        default=False,
+        help='Indica si esta plantilla fue generada automáticamente para una placa única.'
+    )
+
+    marble_prototype_template_id = fields.Many2one(
+        'product.template',
+        string='Plantilla Prototipo',
+        help='La plantilla base desde la cual se generó esta plantilla única.'
+    )
+    
     # Campos específicos del mármol - Dimensiones
     marble_height = fields.Float(
         string='Alto (cm)',
@@ -90,10 +103,11 @@ class ProductTemplate(models.Model):
         """Calcular número de productos generados"""
         for record in self:
             if record.is_marble_template:
-                generated_products = self.env['product.product'].search_count([
-                    ('marble_parent_template_id', '=', record.id)
+                # ✅ ACTUALIZACIÓN: Contar plantillas generadas en lugar de productos
+                generated_templates = self.env['product.template'].search_count([
+                    ('marble_prototype_template_id', '=', record.id)
                 ])
-                record.generated_products_count = generated_products
+                record.generated_products_count = generated_templates
             else:
                 record.generated_products_count = 0
     
@@ -101,8 +115,6 @@ class ProductTemplate(models.Model):
     def _onchange_is_marble_template(self):
         """Configurar valores por defecto para plantillas de mármol"""
         if self.is_marble_template:
-            # ✅ CORRECCIÓN: Usar 'consu' (Bienes) en lugar de 'product' según la imagen.
-            # 'product' (Producto Almacenable) no está disponible en tu entorno.
             self.type = 'consu'
             self.tracking = 'none'  # Las plantillas no se trackean
             
@@ -189,8 +201,15 @@ class ProductTemplate(models.Model):
     def action_view_generated_products(self):
         """Ver productos generados desde esta plantilla"""
         self.ensure_one()
+        
+        # ✅ ACTUALIZACIÓN: Buscar plantillas generadas en lugar de productos directos
+        generated_templates = self.env['product.template'].search([
+            ('marble_prototype_template_id', '=', self.id)
+        ])
+        
+        # Obtener los products de estas plantillas
         generated_products = self.env['product.product'].search([
-            ('marble_parent_template_id', '=', self.id)
+            ('product_tmpl_id', 'in', generated_templates.ids)
         ])
         
         return {
@@ -201,7 +220,6 @@ class ProductTemplate(models.Model):
             'domain': [('id', 'in', generated_products.ids)],
             'context': {
                 'create': False,
-                'default_marble_parent_template_id': self.id,
                 'search_default_marble_products': 1,
             }
         }
@@ -266,7 +284,6 @@ class ProductTemplate(models.Model):
         """Sobrescribir create para configuraciones automáticas"""
         # Si es plantilla de mármol, asegurar configuraciones
         if vals.get('is_marble_template'):
-            # ✅ CORRECCIÓN: Usar 'consu' (Bienes) en lugar de 'product' según la imagen.
             vals.setdefault('type', 'consu')
             vals.setdefault('tracking', 'none')
             

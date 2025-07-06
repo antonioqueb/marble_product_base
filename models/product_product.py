@@ -17,11 +17,11 @@ class ProductProduct(models.Model):
         help='Indica si este producto fue generado automáticamente desde una plantilla de mármol'
     )
     
-    # Referencia al producto padre/plantilla
-    marble_parent_template_id = fields.Many2one(
+    # ✅ ACTUALIZACIÓN: Referencia al prototipo en lugar del template padre directo
+    marble_prototype_template_id = fields.Many2one(
         'product.template',
-        string='Plantilla Padre',
-        help='Plantilla de mármol desde la cual se generó este producto',
+        string='Plantilla Prototipo',
+        help='Plantilla prototipo de mármol desde la cual se generó este producto',
         domain=[('is_marble_template', '=', True)]
     )
     
@@ -37,21 +37,10 @@ class ProductProduct(models.Model):
     current_stock = fields.Float(
         string='Stock Actual',
         compute='_compute_current_stock',
-        store=True,  # <- IMPORTANTE: así Odoo calcula y guarda el valor
+        store=True,
         help='Stock disponible actual'
     )
 
-    @api.depends('stock_quant_ids.quantity', 'stock_move_ids.state', 'stock_move_ids.product_qty')
-    def _compute_current_stock(self):
-        """
-        Calcular stock actual.
-        El trigger depende de stock_quant_ids.quantity y también de movimientos por seguridad.
-        """
-        for product in self:
-            # Lo más robusto es usar la suma de stock_quant
-            product.current_stock = sum(product.stock_quant_ids.mapped('quantity'))
-
-    
     # Estado del producto único
     marble_status = fields.Selection([
         ('draft', 'Borrador'),
@@ -71,7 +60,6 @@ class ProductProduct(models.Model):
     
     # ============================================
     # CAMPOS ESPECÍFICOS PARA PRODUCTOS ÚNICOS
-    # (No están en product.template)
     # ============================================
     
     # Datos específicos del packing list origen
@@ -174,93 +162,83 @@ class ProductProduct(models.Model):
         for product in self:
             product.current_stock = sum(product.stock_quant_ids.mapped('quantity'))
     
+    # ⚠️ MÉTODO REESCRITO COMPLETAMENTE
     @api.model
-    def create_marble_product_from_template(self, template_id, marble_data, packing_line_id=None):
+    def create_marble_product_from_template(self, prototype_template_id, marble_data, packing_line_id=None):
         """
-        Crear un producto único de mármol basado en una plantilla
+        Crea una plantilla y un producto únicos de mármol basados en una plantilla prototipo.
         
         Args:
-            template_id (int): ID de la plantilla de mármol
-            marble_data (dict): Datos específicos de la placa
-            packing_line_id (int): ID de la línea del packing list
+            prototype_template_id (int): ID de la plantilla prototipo (ej. "Mármol Carrara").
+            marble_data (dict): Datos específicos de la placa.
+            packing_line_id (int): ID de la línea del packing list.
             
         Returns:
-            product.product: Producto creado
+            product.product: El producto único (variante) creado.
         """
-        template = self.env['product.template'].browse(template_id)
+        PrototypeTemplate = self.env['product.template'].browse(prototype_template_id)
         
-        if not template.exists():
-            raise ValidationError(_("La plantilla especificada no existe."))
-            
-        if not template.is_marble_template:
-            raise ValidationError(_("El producto seleccionado no es una plantilla de mármol."))
-        
-        # Generar número de serie único
+        if not PrototypeTemplate.exists() or not PrototypeTemplate.is_marble_template:
+            raise ValidationError(_("La plantilla prototipo especificada no es válida."))
+
+        # 1. Generar número de serie y nombre único
         serial_number = self._generate_marble_serial_number(
             marble_data.get('marble_custom_lot', ''),
             marble_data.get('supplier_lot_number', '')
         )
-        
-        # Crear nombre único del producto
-        product_name = self._generate_marble_product_name(template, marble_data, serial_number)
-        
-        # ============================================
-        # ACTUALIZAR CAMPOS DEL TEMPLATE CON DATOS ESPECÍFICOS
-        # ============================================
-        
-        # Actualizar template con datos específicos de esta placa
-        template.write({
-            'marble_height': marble_data.get('marble_height', template.marble_height),
-            'marble_width': marble_data.get('marble_width', template.marble_width),
-            'marble_thickness': marble_data.get('marble_thickness', template.marble_thickness),
-            'marble_finish': marble_data.get('marble_finish', template.marble_finish) or template.marble_finish,
+        unique_product_name = self._generate_marble_product_name(PrototypeTemplate, marble_data, serial_number)
+
+        # 2. Copiar la plantilla prototipo para crear una plantilla única para esta placa
+        new_template = PrototypeTemplate.copy({
+            'name': unique_product_name,
+            'is_marble_template': False,  # Ya no es una plantilla base
+            'is_generated_marble_template': True, # Es una plantilla generada para una placa
+            'marble_prototype_template_id': PrototypeTemplate.id,
+            'marble_height': marble_data.get('marble_height'),
+            'marble_width': marble_data.get('marble_width'),
+            'marble_thickness': marble_data.get('marble_thickness'),
+            'marble_finish': marble_data.get('marble_finish'),
+            'standard_price': marble_data.get('cost_price', PrototypeTemplate.standard_price),
+            'list_price': 0, # Precio de venta se manejará aparte si es necesario
+            'active': True, # Asegurar que esté activa
         })
-        
-        # Preparar valores para el nuevo producto
-        product_vals = {
-            'name': product_name,
-            'product_tmpl_id': template.id,
+
+        # 3. Odoo crea automáticamente el product.product al crear el template. Lo obtenemos.
+        #    Para un template sin atributos, siempre habrá una y solo una variante.
+        product_variant = new_template.product_variant_id
+        if not product_variant:
+            # Fallback por si algo en la configuración impide la creación automática
+            product_variant = self.search([('product_tmpl_id', '=', new_template.id)], limit=1)
+            if not product_variant:
+                 raise ValidationError(_("No se pudo crear la variante del producto para la nueva plantilla."))
+
+        # 4. Escribir los datos específicos del product.product en la variante
+        product_variant.write({
             'is_generated_marble_product': True,
-            'marble_parent_template_id': template.id,
+            'marble_prototype_template_id': PrototypeTemplate.id, # Referencia al prototipo
             'marble_serial_number': serial_number,
             'marble_status': 'draft',
             'marble_creation_date': fields.Datetime.now(),
-            
-            # Configuración del producto
-            'type': 'consu',
-            'tracking': 'serial',
-            'categ_id': template.categ_id.id,
-            
-            # ============================================
-            # SOLO CAMPOS ESPECÍFICOS DEL PRODUCTO ÚNICO
-            # ============================================
-            'marble_custom_lot': marble_data.get('marble_custom_lot', ''),
-            'wooden_crate_code': marble_data.get('wooden_crate_code', ''),
+            'packing_list_import_line_id': packing_line_id,
             'container_number': marble_data.get('container_number', ''),
             'commercial_invoice': marble_data.get('commercial_invoice', ''),
             'supplier_lot_number': marble_data.get('supplier_lot_number', ''),
-            
-            # Datos de precio específicos
-            'standard_price': marble_data.get('cost_price', template.standard_price),
-            
-            # Referencia al packing list
-            'packing_list_import_line_id': packing_line_id,
-        }
+            'wooden_crate_code': marble_data.get('wooden_crate_code', ''),
+            'marble_custom_lot': marble_data.get('marble_custom_lot', ''),
+            'tracking': 'serial', # Aseguramos el seguimiento por serie
+        })
         
-        # Crear el producto
-        product = self.create(product_vals)
-        
-        # Crear el número de serie (stock.lot)
+        # 5. Crear el Lote/Número de serie en stock.lot
         lot_vals = {
             'name': serial_number,
-            'product_id': product.id,
+            'product_id': product_variant.id,
             'company_id': self.env.company.id,
         }
-        lot = self.env['stock.lot'].create(lot_vals)
+        self.env['stock.lot'].create(lot_vals)
         
-        _logger.info(f"Producto de mármol creado: {product.name} (ID: {product.id}) con lote: {lot.name}")
+        _logger.info(f"Producto de mármol creado: {product_variant.name} (ID: {product_variant.id}) con lote: {serial_number}")
         
-        return product
+        return product_variant
     
     def _generate_marble_serial_number(self, custom_lot, supplier_lot):
         """
