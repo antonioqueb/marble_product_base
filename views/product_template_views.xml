@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de formulario del producto template para mármol -->
+    <record id="product_template_form_view_marble" model="ir.ui.view">
+        <field name="name">product.template.form.marble</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="is_marble_template" widget="boolean_toggle"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Detalles de Mármol" name="marble_details" invisible="not is_marble_template">
+                    <group>
+                        <group string="Dimensiones Base">
+                            <field name="marble_height" required="is_marble_template"/>
+                            <field name="marble_width" required="is_marble_template"/>
+                            <field name="marble_thickness" required="is_marble_template"/>
+                            <field name="marble_sqm" readonly="1"/>
+                        </group>
+                        <group string="Características">
+                            <field name="marble_category"/>
+                            <field name="marble_finish"/>
+                            <field name="marble_origin"/>
+                            <field name="price_per_sqm"/>
+                        </group>
+                    </group>
+                    <group>
+                        <button name="action_view_generated_products" type="object" 
+                                class="oe_stat_button" icon="fa-cubes"
+                                invisible="not is_marble_template">
+                            <div class="o_field_widget o_stat_info">
+                                <field name="generated_products_count" widget="statinfo" string="Productos Generados"/>
+                            </div>
+                        </button>
+                    </group>
+                </page>
+            </xpath>
+            <xpath expr="//page[@name='inventory']" position="attributes">
+                <attribute name="invisible">is_marble_template</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Configuración de Inventario" name="marble_inventory" 
+                      invisible="not is_marble_template">
+                    <group>
+                        <group string="Configuración">
+                            <field name="type" readonly="1"/>
+                            <field name="tracking" readonly="1"/>
+                            <field name="uom_id" readonly="1"/>
+                            <field name="uom_po_id" readonly="1"/>
+                        </group>
+                        <group string="Costos">
+                            <field name="standard_price"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Nota:</strong> Las plantillas de mármol se configuran automáticamente para ser productos almacenables sin seguimiento. 
+                        Los productos únicos generados tendrán seguimiento por número de serie.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Vista de lista para plantillas de mármol -->
+    <record id="product_template_list_view_marble" model="ir.ui.view">
+        <field name="name">product.template.list.marble</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_marble_template" optional="hide"/>
+                <field name="marble_thickness" optional="hide" 
+                       invisible="not is_marble_template"/>
+                <field name="marble_category" optional="hide"
+                       invisible="not is_marble_template"/>
+                <field name="marble_origin" optional="hide"
+                       invisible="not is_marble_template"/>
+                <field name="marble_sqm" optional="hide"
+                       invisible="not is_marble_template"/>
+                <field name="price_per_sqm" optional="hide"
+                       invisible="not is_marble_template"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda para plantillas de mármol -->
+    <record id="product_template_search_view_marble" model="ir.ui.view">
+        <field name="name">product.template.search.marble</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <!-- Filtros tipo mármol -->
+            <xpath expr="//filter[@name='filter_to_sell']" position="after">
+                <separator/>
+                <filter string="Plantillas de Mármol" name="marble_templates" 
+                        domain="[('is_marble_template', '=', True)]"/>
+                <filter string="Productos Estándar" name="standard_products" 
+                        domain="[('is_marble_template', '=', False)]"/>
+            </xpath>
+            <!-- Campos adicionales para búsqueda -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="marble_category"/>
+                <field name="marble_origin"/>
+                <field name="marble_finish"/>
+            </xpath>
+            <!-- Agrupadores existentes + mármol -->
+            <xpath expr="//group/filter[@name='categ_id']" position="after">
+                <filter string="Categoría de Mármol" name="group_marble_category" 
+                    context="{'group_by': 'marble_category'}"
+                    domain="[('is_marble_template', '=', True)]"/>
+                <filter string="Origen" name="group_marble_origin" 
+                    context="{'group_by': 'marble_origin'}"
+                    domain="[('is_marble_template', '=', True)]"/>
+                <filter string="Grosor" name="group_marble_thickness" 
+                    context="{'group_by': 'marble_thickness'}"
+                    domain="[('is_marble_template', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Vista de kanban SIMPLIFICADA para plantillas de mármol -->
+    <record id="product_template_kanban_view_marble" model="ir.ui.view">
+        <field name="name">product.template.kanban.marble</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="is_marble_template"/>
+                <field name="marble_thickness"/>
+                <field name="marble_origin"/>
+                <field name="marble_category"/>
+                <field name="marble_sqm"/>
+                <field name="price_per_sqm"/>
+                <field name="generated_products_count"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('product.template', 'image_128', record.id.raw_value)" alt="Product"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div t-if="record.is_marble_template.raw_value" class="o_marble_template_badge">
+                                    <span class="badge badge-info">Plantilla Mármol</span>
+                                </div>
+                                <div t-if="record.is_marble_template.raw_value and record.marble_thickness.value" class="text-muted">
+                                    Grosor: <t t-esc="record.marble_thickness.value"/>cm
+                                </div>
+                                <div t-if="record.is_marble_template.raw_value and record.marble_origin.value" class="text-muted">
+                                    Origen: <t t-esc="record.marble_origin.value"/>
+                                </div>
+                                <div t-if="record.is_marble_template.raw_value and record.marble_sqm.value" class="text-muted">
+                                    <t t-esc="record.marble_sqm.value"/> m²
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Acción principal para plantillas de mármol -->
+    <record id="action_marble_templates" model="ir.actions.act_window">
+        <field name="name">Plantillas de Mármol</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_marble_template', '=', True)]</field>
+        <field name="view_id" ref="product_template_kanban_view_marble"/>
+        <field name="context">{
+            'default_is_marble_template': True,
+            'default_type': 'consu',
+            'default_tracking': 'none',
+            'search_default_marble_templates': 1,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear nueva plantilla de mármol
+            </p>
+            <p>
+                Las plantillas de mármol son productos base que se utilizan para
+                generar automáticamente productos únicos cuando se procesa un packing list.
+                <br/>
+                Cada plantilla define las características generales del material:
+                categoría, origen, acabado típico, etc.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Acción para ver todas las plantillas (mármol y estándar) -->
+    <record id="action_product_templates_all" model="ir.actions.act_window">
+        <field name="name">Todas las Plantillas</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear nuevo producto
+            </p>
+            <p>
+                Aquí puedes ver tanto plantillas de mármol como productos estándar.
+                Usa los filtros para distinguir entre tipos.
+            </p>
+        </field>
+    </record>
+    
+    <!-- Servidor de acciones para convertir producto a plantilla de mármol -->
+    <record id="action_convert_to_marble_template" model="ir.actions.server">
+        <field name="name">Convertir a Plantilla de Mármol</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    for record in records:
+        if not record.is_marble_template:
+            record.write({
+                'is_marble_template': True,
+                'type': 'consu',
+                'tracking': 'none',
+            })
+        </field>
+    </record>
+    
+    <!-- Servidor de acciones para revertir plantilla de mármol -->
+    <record id="action_revert_marble_template" model="ir.actions.server">
+        <field name="name">Revertir Plantilla de Mármol</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    for record in records:
+        if record.is_marble_template:
+            # Verificar que no tenga productos generados
+            generated_products = env['product.product'].search([
+                ('marble_parent_template_id', '=', record.id)
+            ])
+            if generated_products:
+                raise UserError("No se puede revertir: tiene productos generados asociados")
+            
+            record.write({
+                'is_marble_template': False,
+                'marble_height': 0,
+                'marble_width': 0,
+                'marble_thickness': 0,
+                'marble_custom_lot': '',
+                'wooden_crate_code': '',
+                'marble_finish': '',
+                'marble_origin': '',
+                'marble_category': 'marble',
+                'price_per_sqm': 0,
+            })
+        </field>
+    </record>
+</odoo>

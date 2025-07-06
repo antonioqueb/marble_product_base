@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de formulario de orden de compra con campos de mármol -->
+    <record id="purchase_order_form_view_marble" model="ir.ui.view">
+        <field name="name">purchase.order.form.marble</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Añadir campos de mármol en la cabecera -->
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <field name="has_marble_products" invisible="1"/>
+                <field name="container_number" invisible="not has_marble_products"/>
+                <field name="commercial_invoice" invisible="not has_marble_products"/>
+                <field name="packing_list_imported" readonly="1" invisible="not has_marble_products"/>
+            </xpath>
+            <!-- Añadir botones estadísticos -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_import_packing_list" type="object" class="oe_stat_button" icon="fa-upload"
+                        invisible="not has_marble_products or state not in ['purchase', 'done']">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Importar</span>
+                        <span class="o_stat_text">Packing List</span>
+                    </div>
+                </button>
+                <button name="action_view_packing_lists" type="object" class="oe_stat_button" icon="fa-list"
+                        invisible="packing_list_count == 0">
+                    <field name="packing_list_count" widget="statinfo" string="Packing Lists"/>
+                </button>
+                <button name="action_view_generated_products" type="object" class="oe_stat_button" icon="fa-cubes"
+                        invisible="generated_products_count == 0">
+                    <field name="generated_products_count" widget="statinfo" string="Productos Generados"/>
+                </button>
+            </xpath>
+            <!-- Añadir resumen de mármol -->
+            <xpath expr="//page[@name='purchase_delivery_invoice']" position="after">
+                <page string="Resumen de Mármol" name="marble_summary" invisible="not has_marble_products">
+                    <group>
+                        <group string="Totales">
+                            <field name="total_marble_sqm" readonly="1"/>
+                            <field name="packing_list_count" readonly="1"/>
+                            <field name="generated_products_count" readonly="1"/>
+                        </group>
+                        <group string="Estado del Proceso">
+                            <field name="packing_list_imported" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert" invisible="packing_list_imported">
+                        <h4>📋 Siguiente Paso: Importar Packing List</h4>
+                        <p>
+                            Una vez confirmada la orden de compra, use el botón 
+                            <strong>"Importar Packing List"</strong> para cargar 
+                            los datos específicos de cada placa de mármol.
+                        </p>
+                    </div>
+                    <div class="alert alert-success" role="alert" invisible="not packing_list_imported">
+                        <h4>✅ Packing List Importado</h4>
+                        <p>
+                            Los productos únicos de mármol han sido generados.
+                            Use los botones estadísticos para ver los detalles.
+                        </p>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de lista de líneas de orden de compra -->
+    <record id="purchase_order_line_list_view_marble" model="ir.ui.view">
+        <field name="name">purchase.order.line.list.marble</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_qty']" position="after">
+                <field name="marble_height" optional="hide" invisible="not is_marble_template"/>
+                <field name="marble_width" optional="hide" invisible="not is_marble_template"/>
+                <field name="marble_thickness" optional="hide" invisible="not is_marble_template"/>
+                <field name="marble_custom_lot" optional="hide" invisible="not is_marble_template"/>
+                <field name="marble_finish" optional="hide" invisible="not is_marble_template"/>
+                <field name="estimated_pieces" optional="hide" invisible="not is_marble_template"/>
+                <field name="avg_sqm_per_piece" optional="hide" invisible="not is_marble_template"/>
+            </xpath>
+            <xpath expr="//field[@name='product_qty']" position="before">
+                <field name="is_marble_template" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de lista de órdenes de compra con información de mármol -->
+    <record id="purchase_order_list_view_marble" model="ir.ui.view">
+        <field name="name">purchase.order.list.marble</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="has_marble_products" optional="hide"/>
+                <field name="container_number" optional="hide" invisible="not has_marble_products"/>
+                <field name="packing_list_imported" optional="hide" invisible="not has_marble_products"/>
+                <field name="total_marble_sqm" optional="hide" invisible="not has_marble_products"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista kanban SIMPLIFICADA para órdenes de compra de mármol -->
+    <record id="purchase_order_kanban_view_marble" model="ir.ui.view">
+        <field name="name">purchase.order.kanban.marble</field>
+        <field name="model">purchase.order</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="has_marble_products"/>
+                <field name="container_number"/>
+                <field name="total_marble_sqm"/>
+                <field name="packing_list_imported"/>
+                <field name="state"/>
+                <field name="partner_id"/>
+                <field name="amount_total"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="o_kanban_record_subtitle">
+                                    <field name="partner_id"/>
+                                </div>
+                                <div t-if="record.has_marble_products.raw_value" class="o_marble_order_badge">
+                                    <span class="badge badge-info">Orden Mármol</span>
+                                </div>
+                                <div t-if="record.has_marble_products.raw_value and record.container_number.value" class="text-muted">
+                                    Contenedor: <t t-esc="record.container_number.value"/>
+                                </div>
+                                <div t-if="record.has_marble_products.raw_value and record.total_marble_sqm.value" class="text-muted">
+                                    Total: <t t-esc="record.total_marble_sqm.value"/> m²
+                                </div>
+                                <div t-if="record.has_marble_products.raw_value" class="text-muted">
+                                    <span t-if="record.packing_list_imported.raw_value" class="text-success">
+                                        ✅ Packing List Importado
+                                    </span>
+                                    <span t-else="" class="text-warning">
+                                        ⏳ Pendiente Packing List
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="amount_total" widget="monetary"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="state" widget="label_selection" options="{'classes': {'draft': 'default', 'sent': 'default', 'to approve': 'warning', 'purchase': 'success', 'done': 'success', 'cancel': 'danger'}}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Filtros de búsqueda para órdenes con mármol -->
+    <record id="purchase_order_search_view_marble" model="ir.ui.view">
+        <field name="name">purchase.order.search.marble</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='approved']" position="after">
+                <separator/>
+                <filter string="Órdenes con Mármol" name="marble_orders" domain="[('has_marble_products', '=', True)]"/>
+                <filter string="Packing List Pendiente" name="packing_pending" domain="[('has_marble_products', '=', True), ('packing_list_imported', '=', False)]"/>
+                <filter string="Packing List Importado" name="packing_imported" domain="[('has_marble_products', '=', True), ('packing_list_imported', '=', True)]"/>
+                <filter string="Con Contenedor" name="with_container" domain="[('has_marble_products', '=', True), ('container_number', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//group/filter[@name='vendor']" position="after">
+                <separator/>
+                <filter string="Estado Packing List" name="group_packing_status"
+                    context="{'group_by': 'packing_list_imported'}"
+                    domain="[('has_marble_products', '=', True)]"/>
+                <filter string="Proveedor (Mármol)" name="group_marble_supplier"
+                    context="{'group_by': 'partner_id'}"
+                    domain="[('has_marble_products', '=', True)]"/>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="container_number"/>
+                <field name="commercial_invoice"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Acción para órdenes de compra de mármol -->
+    <record id="action_purchase_order_marble" model="ir.actions.act_window">
+        <field name="name">Órdenes de Compra - Mármol</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('has_marble_products', '=', True)]</field>
+        <field name="view_id" ref="purchase_order_kanban_view_marble"/>
+        <field name="context">{'search_default_marble_orders': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear una nueva orden de compra de mármol
+            </p>
+            <p>
+                Las órdenes de compra de mármol permiten gestionar la importación
+                de productos desde packing lists del proveedor.
+                <br/>
+                <strong>Proceso:</strong>
+                <br/>
+                1. Crear orden con plantillas de mármol
+                <br/>
+                2. Confirmar la orden
+                <br/>
+                3. Importar packing list con datos específicos
+                <br/>
+                4. Productos únicos se generan automáticamente
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción para órdenes pendientes de packing list -->
+    <record id="action_purchase_order_marble_pending" model="ir.actions.act_window">
+        <field name="name">Órdenes Pendientes - Packing List</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('has_marble_products', '=', True), ('packing_list_imported', '=', False), ('state', 'in', ['purchase', 'done'])]</field>
+        <field name="context">{'search_default_packing_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay órdenes pendientes de packing list
+            </p>
+            <p>
+                Aquí se muestran las órdenes de mármol confirmadas que 
+                aún no tienen su packing list importado.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de formulario para packing list import -->
+    <record id="packing_list_import_form_view" model="ir.ui.view">
+        <field name="name">packing.list.import.form</field>
+        <field name="model">packing.list.import</field>
+        <field name="arch" type="xml">
+            <form string="Packing List">
+                <header>
+                    <button name="action_process_packing_list" string="Procesar Packing List" 
+                            type="object" class="btn-primary"
+                            invisible="state != 'imported'"/>
+                    <button name="action_cancel" string="Cancelar" 
+                            type="object" class="btn-secondary"
+                            invisible="state in ['processed', 'cancelled']"/>
+                    <button name="action_set_to_draft" string="Volver a Borrador" 
+                            type="object" class="btn-secondary"
+                            invisible="state not in ['imported', 'cancelled']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,imported,processed"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_created_products" type="object" 
+                                class="oe_stat_button" icon="fa-cubes"
+                                invisible="created_products_count == 0">
+                            <field name="created_products_count" widget="statinfo" string="Productos Creados"/>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información General">
+                            <field name="name"/>
+                            <field name="purchase_order_id" readonly="1"/>
+                            <field name="supplier_id" readonly="1"/>
+                        </group>
+                        <group string="Información del Envío">
+                            <field name="container_number"/>
+                            <field name="commercial_invoice"/>
+                            <field name="import_date" readonly="1"/>
+                            <field name="process_date" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Resumen Estadístico">
+                        <group>
+                            <field name="total_pieces" readonly="1"/>
+                            <field name="total_sqm" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_lots" readonly="1"/>
+                            <field name="total_crates" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Líneas del Packing List" name="lines">
+                            <field name="line_ids">
+                                <list string="Líneas" editable="bottom" create="true" delete="true">
+                                    <field name="product_name"/>
+                                    <field name="marble_height"/>
+                                    <field name="marble_width"/>
+                                    <field name="marble_thickness"/>
+                                    <field name="marble_sqm" readonly="1"/>
+                                    <field name="marble_custom_lot"/>
+                                    <field name="wooden_crate_code"/>
+                                    <field name="supplier_lot_number"/>
+                                    <field name="marble_finish"/>
+                                    <field name="cost_price"/>
+                                    <field name="price_per_sqm"/>
+                                    <field name="created_product_id" readonly="1"/>
+                                    <field name="is_processed" readonly="1"/>
+                                </list>
+                                <form string="Línea de Packing List">
+                                    <sheet>
+                                        <group>
+                                            <group string="Producto">
+                                                <field name="product_name"/>
+                                                <field name="marble_finish"/>
+                                            </group>
+                                            <group string="Estado">
+                                                <field name="is_processed" readonly="1"/>
+                                                <field name="created_product_id" readonly="1"/>
+                                            </group>
+                                        </group>
+                                        
+                                        <group string="Dimensiones">
+                                            <group>
+                                                <field name="marble_height"/>
+                                                <field name="marble_width"/>
+                                                <field name="marble_thickness"/>
+                                            </group>
+                                            <group>
+                                                <field name="marble_sqm" readonly="1"/>
+                                            </group>
+                                        </group>
+                                        
+                                        <group string="Trazabilidad">
+                                            <group>
+                                                <field name="marble_custom_lot"/>
+                                                <field name="wooden_crate_code"/>
+                                            </group>
+                                            <group>
+                                                <field name="supplier_lot_number"/>
+                                            </group>
+                                        </group>
+                                        
+                                        <group string="Precio">
+                                            <group>
+                                                <field name="cost_price"/>
+                                                <field name="price_per_sqm"/>
+                                            </group>
+                                        </group>
+                                        
+                                        <group string="Errores" invisible="not has_errors">
+                                            <field name="has_errors" readonly="1"/>
+                                            <field name="error_message" readonly="1"/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                        
+                        <page string="Notas" name="notes">
+                            <field name="notes" placeholder="Notas adicionales sobre este packing list..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista de lista para packing list import -->
+    <record id="packing_list_import_list_view" model="ir.ui.view">
+        <field name="name">packing.list.import.list</field>
+        <field name="model">packing.list.import</field>
+        <field name="arch" type="xml">
+            <list string="Packing Lists">
+                <field name="name"/>
+                <field name="purchase_order_id"/>
+                <field name="supplier_id"/>
+                <field name="container_number"/>
+                <field name="commercial_invoice"/>
+                <field name="state" decoration-success="state == 'processed'" 
+                       decoration-info="state == 'imported'" decoration-muted="state == 'cancelled'"/>
+                <field name="total_pieces"/>
+                <field name="total_sqm"/>
+                <field name="total_lots"/>
+                <field name="import_date"/>
+                <field name="created_products_count"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Vista de búsqueda para packing list import -->
+    <record id="packing_list_import_search_view" model="ir.ui.view">
+        <field name="name">packing.list.import.search</field>
+        <field name="model">packing.list.import</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Packing Lists">
+                <field name="name"/>
+                <field name="purchase_order_id"/>
+                <field name="supplier_id"/>
+                <field name="container_number"/>
+                <field name="commercial_invoice"/>
+                
+                <filter string="Borradores" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Importados" name="imported" domain="[('state', '=', 'imported')]"/>
+                <filter string="Procesados" name="processed" domain="[('state', '=', 'processed')]"/>
+                <filter string="Cancelados" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
+                
+                <separator/>
+                <filter string="Últimos 30 días" name="last_month" 
+                        domain="[('import_date', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Proveedor" name="group_supplier" context="{'group_by': 'supplier_id'}"/>
+                    <filter string="Orden de Compra" name="group_purchase_order" context="{'group_by': 'purchase_order_id'}"/>
+                    <filter string="Fecha de Importación" name="group_import_date" context="{'group_by': 'import_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Acción principal para packing lists -->
+    <record id="action_packing_list_import" model="ir.actions.act_window">
+        <field name="name">Packing Lists</field>
+        <field name="res_model">packing.list.import</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay packing lists importados
+            </p>
+            <p>
+                Los packing lists se crean desde las órdenes de compra de mármol
+                utilizando el botón "Importar Packing List".
+            </p>
+        </field>
+    </record>
+    
+    <!-- Vista de líneas de packing list (independiente) -->
+    <record id="packing_list_import_line_list_view" model="ir.ui.view">
+        <field name="name">packing.list.import.line.list</field>
+        <field name="model">packing.list.import.line</field>
+        <field name="arch" type="xml">
+            <list string="Líneas de Packing List">
+                <field name="packing_list_id"/>
+                <field name="product_name"/>
+                <field name="marble_height"/>
+                <field name="marble_width"/>
+                <field name="marble_thickness"/>
+                <field name="marble_sqm"/>
+                <field name="marble_custom_lot"/>
+                <field name="wooden_crate_code"/>
+                <field name="supplier_lot_number"/>
+                <field name="created_product_id"/>
+                <field name="is_processed" decoration-success="is_processed == True"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Vista de formulario para líneas de packing list -->
+    <record id="packing_list_import_line_form_view" model="ir.ui.view">
+        <field name="name">packing.list.import.line.form</field>
+        <field name="model">packing.list.import.line</field>
+        <field name="arch" type="xml">
+            <form string="Línea de Packing List">
+                <header>
+                    <button name="action_view_created_product" string="Ver Producto Creado" 
+                            type="object" class="btn-primary"
+                            invisible="not created_product_id"/>
+                    <field name="is_processed" widget="statusbar" statusbar_visible="False,True"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="product_name"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Packing List">
+                            <field name="packing_list_id"/>
+                        </group>
+                        <group string="Producto Creado">
+                            <field name="created_product_id" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Dimensiones">
+                        <group>
+                            <field name="marble_height"/>
+                            <field name="marble_width"/>
+                            <field name="marble_thickness"/>
+                        </group>
+                        <group>
+                            <field name="marble_sqm" readonly="1"/>
+                            <field name="marble_finish"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Trazabilidad">
+                        <group>
+                            <field name="marble_custom_lot"/>
+                            <field name="wooden_crate_code"/>
+                        </group>
+                        <group>
+                            <field name="supplier_lot_number"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Precio">
+                        <group>
+                            <field name="cost_price"/>
+                            <field name="price_per_sqm"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Control de Errores" invisible="not has_errors">
+                        <field name="has_errors" readonly="1"/>
+                        <field name="error_message" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Acción para líneas de packing list -->
+    <record id="action_packing_list_import_lines" model="ir.actions.act_window">
+        <field name="name">Líneas de Packing List</field>
+        <field name="res_model">packing.list.import.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay líneas de packing list
+            </p>
+        </field>
+    </record>
+
+</odoo>

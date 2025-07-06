@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Menú principal de Gestión de Mármol -->
+    <menuitem id="menu_marble_management" 
+              name="Gestión de Mármol" 
+              sequence="50"/>
+    
+    <!-- Submenú de Productos -->
+    <menuitem id="menu_marble_products" 
+              name="Productos" 
+              parent="menu_marble_management" 
+              sequence="10"/>
+    
+    <menuitem id="menu_marble_templates" 
+              name="Plantillas de Mármol" 
+              parent="menu_marble_products" 
+              action="action_marble_templates" 
+              sequence="10"/>
+    
+    <menuitem id="menu_marble_products_unique" 
+              name="Productos Únicos" 
+              parent="menu_marble_products" 
+              action="action_marble_products" 
+              sequence="20"/>
+    
+    <menuitem id="menu_marble_products_available" 
+              name="Mármol Disponible" 
+              parent="menu_marble_products" 
+              action="action_marble_products_available" 
+              sequence="30"/>
+    
+    <!-- Submenú de Compras -->
+    <menuitem id="menu_marble_purchases" 
+              name="Compras" 
+              parent="menu_marble_management" 
+              sequence="20"/>
+    
+    <menuitem id="menu_marble_purchase_orders" 
+              name="Órdenes de Compra" 
+              parent="menu_marble_purchases" 
+              action="action_purchase_order_marble" 
+              sequence="10"/>
+    
+    <menuitem id="menu_marble_packing_lists" 
+              name="Packing Lists" 
+              parent="menu_marble_purchases" 
+              action="action_packing_list_import" 
+              sequence="20"/>
+    
+    <menuitem id="menu_marble_packing_lines" 
+              name="Líneas de Packing List" 
+              parent="menu_marble_purchases" 
+              action="action_packing_list_import_lines" 
+              sequence="30"/>
+    
+    <!-- Añadir elementos al menú de Inventario existente -->
+    <menuitem id="menu_marble_inventory_products" 
+              name="Productos de Mármol" 
+              parent="stock.menu_stock_inventory_control" 
+              action="action_marble_products_available" 
+              sequence="15"/>
+    
+    <!-- Añadir elementos al menú de Compras existente -->
+    <menuitem id="menu_marble_purchase_orders_std" 
+              name="Órdenes de Mármol" 
+              parent="purchase.menu_purchase_root" 
+              action="action_purchase_order_marble" 
+              sequence="15"/>
+
+</odoo>

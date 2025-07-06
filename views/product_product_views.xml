@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de formulario para productos únicos de mármol -->
+    <record id="product_product_form_view_marble" model="ir.ui.view">
+        <field name="name">product.product.form.marble</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            
+            <!-- Ocultar botón problemático heredado de product.template -->
+            <xpath expr="//button[@name='action_view_generated_products']" position="replace"/>
+            
+            <!-- Campos específicos de mármol después del código de barras -->
+            <xpath expr="//field[@name='barcode']" position="after">
+                <field name="is_generated_marble_product" invisible="1"/>
+                <field name="marble_serial_number" readonly="1"
+                       invisible="not is_generated_marble_product"/>
+                <field name="marble_status" 
+                       invisible="not is_generated_marble_product"/>
+            </xpath>
+
+            <!-- Botones estadísticos específicos para mármol -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_stock_moves" type="object" 
+                        class="oe_stat_button" icon="fa-exchange"
+                        invisible="not is_generated_marble_product">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Movimientos</span>
+                    </div>
+                </button>
+                <button name="action_view_packing_list" type="object" 
+                        class="oe_stat_button" icon="fa-list-alt"
+                        invisible="not is_generated_marble_product or not packing_list_import_line_id">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Packing List</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <!-- Pestaña de información de mármol -->
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page string="Información de Mármol" name="marble_info" 
+                      invisible="not is_generated_marble_product">
+                    <group>
+                        <group string="Dimensiones Específicas">
+                            <field name="marble_height" readonly="1"/>
+                            <field name="marble_width" readonly="1"/>
+                            <field name="marble_thickness" readonly="1"/>
+                            <field name="marble_sqm" readonly="1"/>
+                        </group>
+                        <group string="Características">
+                            <field name="marble_category" readonly="1"/>
+                            <field name="marble_finish" readonly="1"/>
+                            <field name="marble_origin" readonly="1"/>
+                            <field name="price_per_sqm" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Trazabilidad Completa">
+                        <group>
+                            <field name="marble_custom_lot" readonly="1"/>
+                            <field name="wooden_crate_code" readonly="1"/>
+                            <field name="supplier_lot_number" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="container_number" readonly="1"/>
+                            <field name="commercial_invoice" readonly="1"/>
+                            <field name="marble_creation_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Referencias">
+                        <field name="marble_parent_template_id" readonly="1"/>
+                        <field name="packing_list_import_line_id" readonly="1"/>
+                    </group>
+                    <group string="Stock Actual">
+                        <field name="current_stock" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+
+            <!-- Botones de acción en el header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_set_available" string="Marcar Disponible" 
+                        type="object" class="btn-primary"
+                        invisible="not is_generated_marble_product or marble_status != 'draft'"/>
+                <button name="action_set_sold" string="Marcar Vendido" 
+                        type="object" class="btn-secondary"
+                        invisible="not is_generated_marble_product or marble_status not in ['available', 'reserved']"/>
+                <button name="action_set_damaged" string="Marcar Dañado" 
+                        type="object" class="btn-warning"
+                        invisible="not is_generated_marble_product"/>
+                <button name="action_archive_marble_product" string="Archivar" 
+                        type="object" class="btn-danger"
+                        invisible="not is_generated_marble_product"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de lista para productos únicos de mármol -->
+    <record id="product_product_list_view_marble" model="ir.ui.view">
+        <field name="name">product.product.list.marble</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <!-- Campo invisible para condiciones -->
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="is_generated_marble_product" column_invisible="1"/>
+            </xpath>
+            
+            <!-- Campos específicos de mármol -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="marble_serial_number" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="marble_status" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="marble_sqm" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="marble_custom_lot" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="current_stock" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista kanban para productos de mármol -->
+    <record id="product_product_kanban_view_marble" model="ir.ui.view">
+        <field name="name">product.product.kanban.marble</field>
+        <field name="model">product.product</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="id"/>
+                <field name="name"/>
+                <field name="image_128"/>
+                <field name="is_generated_marble_product"/>
+                <field name="marble_serial_number"/>
+                <field name="marble_status"/>
+                <field name="marble_sqm"/>
+                <field name="marble_custom_lot"/>
+                <field name="current_stock"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('product.product', 'image_128', record.id.raw_value)" alt="Product"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div t-if="record.is_generated_marble_product.raw_value" class="o_marble_product_badge">
+                                    <span class="badge badge-info">Producto Mármol</span>
+                                </div>
+                                <div t-if="record.is_generated_marble_product.raw_value and record.marble_serial_number.value" class="text-muted">
+                                    Serie: <t t-esc="record.marble_serial_number.value"/>
+                                </div>
+                                <div t-if="record.is_generated_marble_product.raw_value and record.marble_status.value" class="text-muted">
+                                    Estado: <t t-esc="record.marble_status.value"/>
+                                </div>
+                                <div t-if="record.is_generated_marble_product.raw_value and record.marble_sqm.value" class="text-muted">
+                                    <t t-esc="record.marble_sqm.value"/> m²
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Filtros de búsqueda para productos de mármol -->
+    <record id="product_product_search_view_marble" model="ir.ui.view">
+        <field name="name">product.product.search.marble</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_search_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Filtros específicos para mármol -->
+            <xpath expr="//filter[@name='inactive']" position="after">
+                <separator/>
+                <filter string="Productos de Mármol" name="marble_products" 
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+                <filter string="Disponibles" name="marble_available" 
+                        domain="[('is_generated_marble_product', '=', True), ('marble_status', '=', 'available')]"/>
+                <filter string="Vendidos" name="marble_sold" 
+                        domain="[('is_generated_marble_product', '=', True), ('marble_status', '=', 'sold')]"/>
+                <filter string="Con Stock" name="marble_in_stock" 
+                        domain="[('is_generated_marble_product', '=', True), ('current_stock', '>', 0)]"/>
+                <filter string="Reservados" name="marble_reserved" 
+                        domain="[('is_generated_marble_product', '=', True), ('marble_status', '=', 'reserved')]"/>
+                <filter string="Dañados" name="marble_damaged" 
+                        domain="[('is_generated_marble_product', '=', True), ('marble_status', '=', 'damaged')]"/>
+            </xpath>
+            
+            <!-- Campos de búsqueda específicos -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="marble_serial_number"/>
+                <field name="marble_custom_lot"/>
+                <field name="wooden_crate_code"/>
+                <field name="supplier_lot_number"/>
+                <field name="marble_status"/>
+                <field name="marble_origin"/>
+            </xpath>
+            
+            <!-- Agrupadores para mármol -->
+            <xpath expr="//group/filter[@name='categ_id']" position="after">
+                <filter string="Estado de Mármol" name="group_marble_status" 
+                        context="{'group_by': 'marble_status'}"
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+                <filter string="Lote Personalizado" name="group_marble_lot" 
+                        context="{'group_by': 'marble_custom_lot'}"
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+                <filter string="Plantilla Padre" name="group_parent_template" 
+                        context="{'group_by': 'marble_parent_template_id'}"
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+                <filter string="Origen" name="group_marble_origin" 
+                        context="{'group_by': 'marble_origin'}"
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+                <filter string="Categoría" name="group_marble_category" 
+                        context="{'group_by': 'marble_category'}"
+                        domain="[('is_generated_marble_product', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Acción para productos únicos de mármol -->
+    <record id="action_marble_products" model="ir.actions.act_window">
+        <field name="name">Productos de Mármol</field>
+        <field name="res_model">product.product</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_generated_marble_product', '=', True)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+        <field name="context">{'search_default_marble_available': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay productos de mármol creados aún
+            </p>
+            <p>
+                Los productos únicos de mármol se crean automáticamente cuando se
+                procesa un packing list desde una orden de compra.
+                <br/>
+                Cada producto representa una placa individual con sus dimensiones,
+                número de serie y trazabilidad específicos.
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción para productos de mármol disponibles -->
+    <record id="action_marble_products_available" model="ir.actions.act_window">
+        <field name="name">Mármol Disponible</field>
+        <field name="res_model">product.product</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_generated_marble_product', '=', True), ('marble_status', '=', 'available'), ('current_stock', '>', 0)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay productos de mármol disponibles
+            </p>
+            <p>
+                Aquí se mostrarán las placas de mármol que están disponibles
+                para venta y tienen stock positivo.
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción para productos de mármol por estado -->
+    <record id="action_marble_products_by_status" model="ir.actions.act_window">
+        <field name="name">Mármol por Estado</field>
+        <field name="res_model">product.product</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_generated_marble_product', '=', True)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+        <field name="context">{'search_default_group_marble_status': 1, 'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay productos de mármol
+            </p>
+            <p>
+                Vista agrupada por estado de las placas de mármol.
+            </p>
+        </field>
+    </record>
+
+</odoo>

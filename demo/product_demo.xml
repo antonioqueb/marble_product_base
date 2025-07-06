@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Categorías de productos para mármol -->
+        <record id="product_category_marble" model="product.category">
+            <field name="name">Mármol y Piedras Naturales</field>
+            <field name="parent_id" ref="product.product_category_all"/>
+        </record>
+        
+        <record id="product_category_marble_natural" model="product.category">
+            <field name="name">Mármol Natural</field>
+            <field name="parent_id" ref="product_category_marble"/>
+        </record>
+        
+        <record id="product_category_granite" model="product.category">
+            <field name="name">Granito</field>
+            <field name="parent_id" ref="product_category_marble"/>
+        </record>
+        
+        <!-- Plantillas de mármol de ejemplo -->
+        <record id="marble_template_carrara" model="product.template">
+            <field name="name">Mármol Carrara</field>
+            <field name="is_marble_template">True</field>
+            <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
+            <field name="categ_id" ref="product_category_marble_natural"/>
+            <field name="uom_id" ref="uom.product_uom_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="tracking">none</field>
+            <field name="marble_height">300.0</field>
+            <field name="marble_width">150.0</field>
+            <field name="marble_thickness">2.0</field>
+            <field name="marble_category">marble</field>
+            <field name="marble_origin">Italia</field>
+            <field name="marble_finish">Polished</field>
+            <field name="standard_price">120.00</field>
+            <field name="price_per_sqm">60.00</field>
+            <field name="description">
+                Mármol Carrara italiano de alta calidad.
+                Ideal para encimeras y revestimientos de lujo.
+            </field>
+        </record>
+        
+        <record id="marble_template_amazon" model="product.template">
+            <field name="name">Amazon</field>
+            <field name="is_marble_template">True</field>
+            <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
+            <field name="categ_id" ref="product_category_marble_natural"/>
+            <field name="uom_id" ref="uom.product_uom_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="tracking">none</field>
+            <field name="marble_height">320.0</field>
+            <field name="marble_width">160.0</field>
+            <field name="marble_thickness">2.0</field>
+            <field name="marble_category">marble</field>
+            <field name="marble_origin">Brasil</field>
+            <field name="marble_finish">Leather</field>
+            <field name="standard_price">150.00</field>
+            <field name="price_per_sqm">75.00</field>
+            <field name="description">
+                Mármol Amazon con vetas características.
+                Excelente para proyectos de alta gama.
+            </field>
+        </record>
+        
+        <record id="marble_template_metalicus" model="product.template">
+            <field name="name">Metalicus</field>
+            <field name="is_marble_template">True</field>
+            <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
+            <field name="categ_id" ref="product_category_marble_natural"/>
+            <field name="uom_id" ref="uom.product_uom_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="tracking">none</field>
+            <field name="marble_height">305.0</field>
+            <field name="marble_width">155.0</field>
+            <field name="marble_thickness">2.0</field>
+            <field name="marble_category">marble</field>
+            <field name="marble_origin">Brasil</field>
+            <field name="marble_finish">Polished</field>
+            <field name="standard_price">180.00</field>
+            <field name="price_per_sqm">90.00</field>
+            <field name="description">
+                Mármol Metalicus con acabado metálico natural.
+                Perfecto para diseños modernos y contemporáneos.
+            </field>
+        </record>
+        
+        <!-- Proveedor de ejemplo -->
+        <record id="supplier_zucchi" model="res.partner">
+            <field name="name">ZUCCHI LUXURY STONES</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="customer_rank">0</field>
+            <field name="country_id" ref="base.it"/>
+            <field name="email">info@zucchiluxury.com</field>
+            <field name="phone">+39 0585 123456</field>
+            <field name="street">Via Carrara 123</field>
+            <field name="city">Carrara</field>
+            <field name="zip">54033</field>
+            <field name="comment">
+                Proveedor especializado en mármol italiano de alta calidad.
+                Experiencia de más de 50 años en el sector.
+            </field>
+        </record>
+        
+    </data>
+</odoo>

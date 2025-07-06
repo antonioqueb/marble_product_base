@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Secuencia para números de serie de productos de mármol -->
+        <record id="sequence_marble_product_serial" model="ir.sequence">
+            <field name="name">Marble Product Serial</field>
+            <field name="code">marble.product.serial</field>
+            <field name="prefix">MP</field>
+            <field name="padding">5</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+            <field name="company_id" eval="False"/>
+            <field name="implementation">standard</field>
+        </record>
+        
+        <!-- Secuencia para packing lists -->
+        <record id="sequence_packing_list" model="ir.sequence">
+            <field name="name">Packing List Import</field>
+            <field name="code">packing.list.import</field>
+            <field name="prefix">PL</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+            <field name="company_id" eval="False"/>
+            <field name="implementation">standard</field>
+        </record>
+        
+    </data>
+</odoo>

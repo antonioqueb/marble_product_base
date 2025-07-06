@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_packing_list_import_user,packing.list.import.user,model_packing_list_import,base.group_user,1,1,1,1
+access_packing_list_import_line_user,packing.list.import.line.user,model_packing_list_import_line,base.group_user,1,1,1,1
+access_packing_list_import_wizard_user,packing.list.import.wizard.user,model_packing_list_import_wizard,base.group_user,1,1,1,1
+access_packing_list_import_manager,packing.list.import.manager,model_packing_list_import,stock.group_stock_manager,1,1,1,1
+access_packing_list_import_line_manager,packing.list.import.line.manager,model_packing_list_import_line,stock.group_stock_manager,1,1,1,1
+access_packing_list_import_wizard_manager,packing.list.import.wizard.manager,model_packing_list_import_wizard,stock.group_stock_manager,1,1,1,1

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista del wizard para importar packing list -->
+    <record id="packing_list_import_wizard_form" model="ir.ui.view">
+        <field name="name">packing.list.import.wizard.form</field>
+        <field name="model">packing.list.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importar Packing List">
+                <header>
+                    <button name="action_import_packing_list" string="Importar" 
+                            type="object" class="btn-primary"
+                            invisible="step == 'upload'"/>
+                    <button name="action_generate_template" string="Descargar Plantilla CSV" 
+                            type="object" class="btn-secondary"/>
+                    <button name="action_show_json_example" string="Ejemplo JSON" 
+                            type="object" class="btn-secondary"
+                            invisible="import_method != 'manual'"/>
+                    <field name="step" widget="statusbar" statusbar_visible="upload,preview,import"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Importar Packing List</h1>
+                        <h2>
+                            <field name="purchase_order_id" readonly="1"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <group string="Información del Envío">
+                            <field name="container_number" required="1"/>
+                            <field name="commercial_invoice" required="1"/>
+                            <field name="packing_list_name"/>
+                        </group>
+                        <group string="Método de Importación">
+                            <field name="import_method" widget="radio"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Sección para carga de archivo -->
+                    <div invisible="import_method not in ['csv', 'excel']">
+                        <separator string="Cargar Archivo"/>
+                        <group>
+                            <group>
+                                <field name="import_file" filename="filename" 
+                                       required="import_method in ['csv', 'excel']"/>
+                                <field name="filename" invisible="1"/>
+                            </group>
+                            <group invisible="import_method != 'csv'">
+                                <field name="has_header"/>
+                                <field name="delimiter"/>
+                            </group>
+                        </group>
+                        
+                        <!-- Vista previa del archivo -->
+                        <div invisible="not preview_data">
+                            <separator string="Vista Previa del Archivo"/>
+                            <field name="preview_data" widget="text" readonly="1" 
+                                   style="font-family: monospace; white-space: pre;"/>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección para entrada manual -->
+                    <div invisible="import_method != 'manual'">
+                        <separator string="Datos Manuales (JSON)"/>
+                        <div class="alert alert-info" role="alert">
+                            <strong>Formato esperado:</strong> Lista de objetos JSON con los campos requeridos.
+                            Use el botón "Ejemplo JSON" para ver el formato correcto.
+                        </div>
+                        <field name="manual_data" widget="ace" options="{'mode': 'json'}" 
+                               required="import_method == 'manual'"/>
+                    </div>
+                    
+                    <!-- Información de ayuda -->
+                    <div class="alert alert-warning" role="alert">
+                        <h4>Campos Requeridos para Importación:</h4>
+                        <ul>
+                            <li><strong>product_name:</strong> Nombre del material (ej: Amazon-2cm-Leather)</li>
+                            <li><strong>height:</strong> Alto en centímetros</li>
+                            <li><strong>width:</strong> Ancho en centímetros</li>
+                            <li><strong>thickness:</strong> Grosor en centímetros</li>
+                            <li><strong>lot:</strong> Lote personalizado/Wooden Crate</li>
+                            <li><strong>wooden_crate:</strong> Código de atado</li>
+                            <li><strong>supplier_lot:</strong> Número de lote del proveedor</li>
+                        </ul>
+                        <h4>Campos Opcionales:</h4>
+                        <ul>
+                            <li><strong>cost:</strong> Costo unitario</li>
+                            <li><strong>price_per_sqm:</strong> Precio por metro cuadrado</li>
+                            <li><strong>finish:</strong> Acabado (Leather, Polished, etc.)</li>
+                        </ul>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vista de lista para wizard (para debugging/admin) -->
+    <record id="packing_list_import_wizard_list" model="ir.ui.view">
+        <field name="name">packing.list.import.wizard.list</field>
+        <field name="model">packing.list.import.wizard</field>
+        <field name="arch" type="xml">
+            <list string="Wizards de Importación">
+                <field name="purchase_order_id"/>
+                <field name="container_number"/>
+                <field name="commercial_invoice"/>
+                <field name="import_method"/>
+                <field name="step"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Acción del wizard -->
+    <record id="action_packing_list_import_wizard" model="ir.actions.act_window">
+        <field name="name">Importar Packing List</field>
+        <field name="res_model">packing.list.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Acción adicional para vista de administración -->
+    <record id="action_packing_list_import_wizard_admin" model="ir.actions.act_window">
+        <field name="name">Wizards de Importación (Admin)</field>
+        <field name="res_model">packing.list.import.wizard</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay wizards de importación registrados
+            </p>
+            <p>
+                Esta vista es solo para administradores para revisar
+                el historial de importaciones de packing lists.
+            </p>
+        </field>
+    </record>
+
+</odoo>
