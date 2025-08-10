@@ -24,8 +24,8 @@
             <field name="is_marble_template">True</field>
             <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
             <field name="categ_id" ref="product_category_marble_natural"/>
-            <field name="uom_id" ref="uom.product_uom_meter"/>
-            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_square_meter"/>
             <field name="tracking">none</field>
             <field name="marble_height">300.0</field>
             <field name="marble_width">150.0</field>
@@ -46,8 +46,8 @@
             <field name="is_marble_template">True</field>
             <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
             <field name="categ_id" ref="product_category_marble_natural"/>
-            <field name="uom_id" ref="uom.product_uom_meter"/>
-            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_square_meter"/>
             <field name="tracking">none</field>
             <field name="marble_height">320.0</field>
             <field name="marble_width">160.0</field>
@@ -68,8 +68,8 @@
             <field name="is_marble_template">True</field>
             <field name="type">consu</field>  <!-- ✅ CORREGIDO: usar 'consu' en lugar de 'product' -->
             <field name="categ_id" ref="product_category_marble_natural"/>
-            <field name="uom_id" ref="uom.product_uom_meter"/>
-            <field name="uom_po_id" ref="uom.product_uom_meter"/>
+            <field name="uom_id" ref="uom.product_uom_square_meter"/>
+            <field name="uom_po_id" ref="uom.product_uom_square_meter"/>
             <field name="tracking">none</field>
             <field name="marble_height">305.0</field>
             <field name="marble_width">155.0</field>

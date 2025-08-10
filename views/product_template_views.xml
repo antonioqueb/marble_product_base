@@ -12,6 +12,14 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Detalles de Mármol" name="marble_details" invisible="not is_marble_template and not is_generated_marble_template">
                     <group>
+                        <group string="Taxonomía">
+                            <field name="marble_family_id"/>
+                            <field name="marble_material_id"/>
+                            <field name="marble_format_id"/>
+                            <field name="marble_thickness_tax_id"/>
+                            <field name="marble_finish_tax_id"/>
+                            <field name="marble_color_tax_id"/>
+                        </group>
                         <group string="Dimensiones Base">
                             <!-- ✅ DIMENSIONES YA NO SON OBLIGATORIAS -->
                             <field name="marble_height"/>
@@ -23,6 +31,8 @@
                             <field name="marble_category"/>
                             <field name="marble_finish"/>
                             <field name="marble_origin"/>
+                            <field name="marble_tone"/>
+                            <field name="marble_vein"/>
                             <field name="price_per_sqm"/>
                         </group>
                     </group>
@@ -77,6 +87,10 @@
                 <field name="marble_category" optional="hide"
                        invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="marble_origin" optional="hide"
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
+                <field name="marble_tone" optional="hide"
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
+                <field name="marble_vein" optional="hide"
                        invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="marble_sqm" optional="hide"
                        invisible="not is_marble_template and not is_generated_marble_template"/>
