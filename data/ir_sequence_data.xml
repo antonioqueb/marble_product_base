@@ -25,6 +25,18 @@
             <field name="company_id" eval="False"/>
             <field name="implementation">standard</field>
         </record>
+
+        <!-- Secuencia para ID corto de productos -->
+        <record id="sequence_marble_product_short" model="ir.sequence">
+            <field name="name">Marble Product Short ID</field>
+            <field name="code">marble.product.short_id</field>
+            <field name="prefix">SMP</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+            <field name="company_id" eval="False"/>
+            <field name="implementation">standard</field>
+        </record>
         
     </data>
 </odoo>

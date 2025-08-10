@@ -122,11 +122,13 @@ class StockPicking(models.Model):
             move = self.env['stock.move'].create(move_vals)
             
             # ✅ CORRECCIÓN: Usar campos correctos para Odoo 18
+            move_line_model = self.env['stock.move.line']
+            qty_field = 'qty_done' if 'qty_done' in move_line_model._fields else 'quantity'
             move_line_vals = {
                 'move_id': move.id,
                 'product_id': product.id,
                 'product_uom_id': product.uom_id.id,
-                'quantity': 1,  # ✅ Cambiado de 'qty_done' a 'quantity'
+                qty_field: 1,
                 'lot_id': lot.id,
                 'location_id': self.location_id.id,
                 'location_dest_id': self.location_dest_id.id,
@@ -321,12 +323,19 @@ class StockPicking(models.Model):
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
-    
+
     is_marble_product = fields.Boolean(
         string='Es Producto de Mármol',
-        related='product_id.is_generated_marble_product',
-        store=True
+        compute='_compute_is_marble_product',
+        store=True,
+        help='Indica si el movimiento corresponde a un producto de mármol'
     )
+
+    @api.depends('product_id')
+    def _compute_is_marble_product(self):
+        """Determinar si el movimiento es de un producto de mármol"""
+        for move in self:
+            move.is_marble_product = bool(getattr(move.product_id, 'is_generated_marble_product', False))
     
     marble_serial_number = fields.Char(
         string='Número de Serie Mármol',
@@ -355,12 +364,19 @@ class StockMove(models.Model):
 
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
-    
+
     is_marble_product = fields.Boolean(
         string='Es Producto de Mármol',
-        related='product_id.is_generated_marble_product',
-        store=True
+        compute='_compute_is_marble_product',
+        store=True,
+        help='Indica si la línea corresponde a un producto de mármol'
     )
+
+    @api.depends('product_id')
+    def _compute_is_marble_product(self):
+        """Determinar si la línea es de un producto de mármol"""
+        for line in self:
+            line.is_marble_product = bool(getattr(line.product_id, 'is_generated_marble_product', False))
     
     marble_dimensions = fields.Char(
         string='Dimensiones',

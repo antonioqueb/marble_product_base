@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 
 
 class ProductProduct(models.Model):
-    _inherit = 'product.product'
+    _inherit = ['product.product', 'mail.thread', 'mail.activity.mixin']
     
     # Campo para identificar productos generados automáticamente
     is_generated_marble_product = fields.Boolean(
@@ -16,6 +16,45 @@ class ProductProduct(models.Model):
         default=False,
         copy=False,
         help='Indica si este producto es una placa única generada desde un Packing List.'
+    )
+
+    # Identificador corto
+    short_id = fields.Char(
+        string='ID Corto',
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+
+    # Datos físicos adicionales
+    marble_tone = fields.Char(
+        string='Tono',
+        related='product_tmpl_id.marble_tone',
+        store=True,
+        readonly=False,
+    )
+    marble_vein = fields.Char(
+        string='Veta',
+        related='product_tmpl_id.marble_vein',
+        store=True,
+        readonly=False,
+    )
+    marble_density = fields.Float(
+        string='Densidad',
+        help='Densidad del material (kg/m³)'
+    )
+    marble_weight = fields.Float(
+        string='Peso',
+        compute='_compute_marble_weight',
+        store=True,
+    )
+    defectos_observaciones = fields.Text(string='Defectos / Observaciones')
+    image_ids = fields.Many2many(
+        'ir.attachment',
+        'product_product_image_rel',
+        'product_id',
+        'attachment_id',
+        string='Fotos'
     )
     
     # Referencia a la plantilla prototipo original
@@ -40,11 +79,14 @@ class ProductProduct(models.Model):
     marble_status = fields.Selection([
         ('draft', 'Borrador'),
         ('available', 'Disponible'),
-        ('reserved', 'Reservado'),
-        ('sold', 'Vendido'),
-        ('damaged', 'Dañado'),
-        ('archived', 'Archivado')
+        ('hold', 'En espera'),
+        ('comprometida', 'Comprometida'),
+        ('en_picking', 'En picking'),
+        ('cargada', 'Cargada'),
+        ('entregada', 'Entregada'),
+        ('scrap', 'Scrap'),
     ], string='Estado de la Placa', default='draft', tracking=True)
+    marble_status_date = fields.Datetime(string='Fecha Estado', readonly=True, copy=False)
     
     # Fecha de creación del producto único
     marble_creation_date = fields.Datetime(
@@ -168,6 +210,15 @@ class ProductProduct(models.Model):
         store=True,
         readonly=False
     )
+    marble_family_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_family_id', store=True, readonly=True)
+    marble_material_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_material_id', store=True, readonly=True)
+    marble_format_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_format_id', store=True, readonly=True)
+    marble_thickness_tax_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_thickness_tax_id', store=True, readonly=True)
+    marble_finish_tax_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_finish_tax_id', store=True, readonly=True)
+    marble_color_tax_id = fields.Many2one('marble.taxonomy', related='product_tmpl_id.marble_color_tax_id', store=True, readonly=True)
+
+    create_date = fields.Datetime(readonly=True)
+    write_date = fields.Datetime(readonly=True)
     
     # ============================================
     # MÉTODOS COMPUTADOS
@@ -178,6 +229,47 @@ class ProductProduct(models.Model):
         """Calcular stock actual"""
         for product in self:
             product.current_stock = sum(product.stock_quant_ids.mapped('quantity'))
+
+    @api.depends('marble_height', 'marble_width', 'marble_thickness', 'marble_density')
+    def _compute_marble_weight(self):
+        for product in self:
+            volume = 0.0
+            if product.marble_height and product.marble_width and product.marble_thickness:
+                volume = (product.marble_height / 100) * (product.marble_width / 100) * (product.marble_thickness / 100)
+            product.marble_weight = product.marble_density * volume if product.marble_density and volume else 0.0
+
+    # ============================
+    # Overrides
+    # ============================
+
+    @api.model
+    def create(self, vals):
+        if not vals.get('short_id'):
+            vals['short_id'] = self.env['ir.sequence'].next_by_code('marble.product.short_id')
+            vals.setdefault('barcode', vals['short_id'])
+        res = super().create(vals)
+        return res
+
+    def write(self, vals):
+        if 'marble_status' in vals:
+            vals['marble_status_date'] = fields.Datetime.now()
+        res = super().write(vals)
+        if 'marble_status' in vals:
+            for record in self:
+                record.message_post(body=_('Estado cambiado a %s') % record.marble_status)
+        return res
+
+    @api.constrains('is_generated_marble_product', 'marble_sqm', 'marble_height', 'marble_width')
+    def _check_generated_product_sqm(self):
+        for record in self:
+            if record.is_generated_marble_product:
+                expected = (record.marble_height * record.marble_width) / 10000 if record.marble_height and record.marble_width else 0
+                if not record.marble_sqm or abs(record.marble_sqm - expected) > 0.0001:
+                    raise ValidationError(_('El M² debe ser alto x ancho y no puede ser cero.'))
+
+    _sql_constraints = [
+        ('short_id_uniq', 'unique(short_id)', 'El ID corto debe ser único.'),
+    ]
     
     # ============================================
     # MÉTODOS PRINCIPALES
@@ -352,25 +444,25 @@ class ProductProduct(models.Model):
         if self.marble_status == 'draft':
             self.marble_status = 'available'
             _logger.info(f"Producto de mármol marcado como disponible: {self.name}")
-    
+
     def action_set_sold(self):
-        """Marcar la placa como vendida"""
+        """Marcar la placa como entregada"""
         self.ensure_one()
-        if self.marble_status in ['available', 'reserved']:
-            self.marble_status = 'sold'
-            _logger.info(f"Producto de mármol marcado como vendido: {self.name}")
-    
+        if self.marble_status in ['cargada', 'en_picking', 'comprometida', 'available']:
+            self.marble_status = 'entregada'
+            _logger.info(f"Producto de mármol marcado como entregado: {self.name}")
+
     def action_set_damaged(self):
-        """Marcar la placa como dañada"""
+        """Marcar la placa como scrap"""
         self.ensure_one()
-        self.marble_status = 'damaged'
-        _logger.info(f"Producto de mármol marcado como dañado: {self.name}")
-    
+        self.marble_status = 'scrap'
+        _logger.info(f"Producto de mármol marcado como scrap: {self.name}")
+
     def action_archive_marble_product(self):
         """Archivar el producto de mármol"""
         for product in self:
             product.write({
-                'marble_status': 'archived',
+                'marble_status': 'hold',
                 'active': False
             })
         _logger.info(f"Productos de mármol archivados: {self.mapped('name')}")
