@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+# models/product_template.py
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
@@ -157,15 +157,14 @@ class ProductTemplate(models.Model):
     
     @api.constrains('marble_height', 'marble_width', 'marble_thickness')
     def _check_marble_dimensions(self):
-        """Validar que las dimensiones sean positivas"""
+        """Validar que las dimensiones, si se introducen, sean positivas."""
         for record in self:
-            if record.is_marble_template:
-                if record.marble_height and record.marble_height <= 0:
-                    raise ValidationError(_("El alto debe ser mayor a cero."))
-                if record.marble_width and record.marble_width <= 0:
-                    raise ValidationError(_("El ancho debe ser mayor a cero."))
-                if record.marble_thickness and record.marble_thickness <= 0:
-                    raise ValidationError(_("El grosor debe ser mayor a cero."))
+            if record.marble_height and record.marble_height <= 0:
+                raise ValidationError(_("El alto, si se especifica, debe ser un valor positivo."))
+            if record.marble_width and record.marble_width <= 0:
+                raise ValidationError(_("El ancho, si se especifica, debe ser un valor positivo."))
+            if record.marble_thickness and record.marble_thickness <= 0:
+                raise ValidationError(_("El grosor, si se especifica, debe ser un valor positivo."))
     
     @api.constrains('is_marble_template', 'marble_sqm')
     def _check_marble_template_sqm(self):

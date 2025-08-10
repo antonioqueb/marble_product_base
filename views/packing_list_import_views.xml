@@ -69,6 +69,7 @@
                                     <field name="marble_width"/>
                                     <field name="marble_thickness"/>
                                     <field name="marble_sqm" readonly="1"/>
+                                    <!-- ✅ La etiqueta "Lote" viene del modelo actualizado -->
                                     <field name="marble_custom_lot"/>
                                     <field name="wooden_crate_code"/>
                                     <field name="supplier_lot_number"/>
@@ -104,6 +105,7 @@
                                         
                                         <group string="Trazabilidad">
                                             <group>
+                                                <!-- ✅ La etiqueta "Lote" viene del modelo actualizado -->
                                                 <field name="marble_custom_lot"/>
                                                 <field name="wooden_crate_code"/>
                                             </group>
@@ -224,6 +226,7 @@
                 <field name="marble_width"/>
                 <field name="marble_thickness"/>
                 <field name="marble_sqm"/>
+                <!-- ✅ La etiqueta "Lote" viene del modelo actualizado -->
                 <field name="marble_custom_lot"/>
                 <field name="wooden_crate_code"/>
                 <field name="supplier_lot_number"/>
@@ -276,6 +279,7 @@
                     
                     <group string="Trazabilidad">
                         <group>
+                            <!-- ✅ La etiqueta "Lote" viene del modelo actualizado -->
                             <field name="marble_custom_lot"/>
                             <field name="wooden_crate_code"/>
                         </group>

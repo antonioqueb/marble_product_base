@@ -10,12 +10,13 @@
                 <field name="is_marble_template" widget="boolean_toggle"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Detalles de Mármol" name="marble_details" invisible="not is_marble_template">
+                <page string="Detalles de Mármol" name="marble_details" invisible="not is_marble_template and not is_generated_marble_template">
                     <group>
                         <group string="Dimensiones Base">
-                            <field name="marble_height" required="is_marble_template"/>
-                            <field name="marble_width" required="is_marble_template"/>
-                            <field name="marble_thickness" required="is_marble_template"/>
+                            <!-- ✅ DIMENSIONES YA NO SON OBLIGATORIAS -->
+                            <field name="marble_height"/>
+                            <field name="marble_width"/>
+                            <field name="marble_thickness"/>
                             <field name="marble_sqm" readonly="1"/>
                         </group>
                         <group string="Características">
@@ -28,7 +29,7 @@
                     <group>
                         <button name="action_view_generated_products" type="object" 
                                 class="oe_stat_button" icon="fa-cubes"
-                                invisible="not is_marble_template">
+                                invisible="not is_marble_template and not is_generated_marble_template">
                             <div class="o_field_widget o_stat_info">
                                 <field name="generated_products_count" widget="statinfo" string="Productos Generados"/>
                             </div>
@@ -41,7 +42,7 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Configuración de Inventario" name="marble_inventory" 
-                      invisible="not is_marble_template">
+                      invisible="not is_marble_template and not is_generated_marble_template">
                     <group>
                         <group string="Configuración">
                             <field name="type" readonly="1"/>
@@ -72,15 +73,15 @@
             <xpath expr="//field[@name='name']" position="after">
                 <field name="is_marble_template" optional="hide"/>
                 <field name="marble_thickness" optional="hide" 
-                       invisible="not is_marble_template"/>
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="marble_category" optional="hide"
-                       invisible="not is_marble_template"/>
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="marble_origin" optional="hide"
-                       invisible="not is_marble_template"/>
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="marble_sqm" optional="hide"
-                       invisible="not is_marble_template"/>
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
                 <field name="price_per_sqm" optional="hide"
-                       invisible="not is_marble_template"/>
+                       invisible="not is_marble_template and not is_generated_marble_template"/>
             </xpath>
         </field>
     </record>
@@ -234,11 +235,11 @@ if records:
 if records:
     for record in records:
         if record.is_marble_template:
-            # Verificar que no tenga productos generados
-            generated_products = env['product.product'].search([
-                ('marble_parent_template_id', '=', record.id)
+            # ✅ CORREGIDO: Usar marble_prototype_template_id en lugar de marble_parent_template_id
+            generated_templates = env['product.template'].search([
+                ('marble_prototype_template_id', '=', record.id)
             ])
-            if generated_products:
+            if generated_templates:
                 raise UserError("No se puede revertir: tiene productos generados asociados")
             
             record.write({
@@ -246,8 +247,6 @@ if records:
                 'marble_height': 0,
                 'marble_width': 0,
                 'marble_thickness': 0,
-                'marble_custom_lot': '',
-                'wooden_crate_code': '',
                 'marble_finish': '',
                 'marble_origin': '',
                 'marble_category': 'marble',

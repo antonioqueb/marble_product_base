@@ -94,7 +94,7 @@
             <field name="country_id" ref="base.it"/>
             <field name="email">info@zucchiluxury.com</field>
             <field name="phone">+39 0585 123456</field>
-            <field name="street">Via Carrara 123</field>
+            <field name="slistt">Via Carrara 123</field>
             <field name="city">Carrara</field>
             <field name="zip">54033</field>
             <field name="comment">

@@ -8,7 +8,6 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             
-            <!-- Botón para aplicar productos del packing list -->
             <xpath expr="//header" position="inside">
                 <button name="action_apply_packing_list_products" 
                         string="Aplicar Productos de Packing List" 
@@ -23,17 +22,15 @@
                         invisible="not has_marble_products"/>
             </xpath>
             
-            <!-- Campos adicionales para mármol -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="has_marble_products" invisible="1"/>
                 <field name="packing_list_applied" readonly="1" invisible="not has_marble_products"/>
                 <field name="packing_list_id" readonly="1" invisible="not packing_list_id"/>
             </xpath>
             
-            <!-- Alertas informativas -->
             <xpath expr="//sheet" position="before">
                 <div class="alert alert-warning" role="alert" 
-                     invisible="picking_type_code != 'incoming' or not purchase_id or packing_list_applied or not has_marble_products">
+                     invisible="not has_marble_products or packing_list_applied or picking_type_code != 'incoming' or not purchase_id">
                     <h4>⚠️ Productos de Packing List Pendientes</h4>
                     <p>
                         Esta recepción tiene productos de mármol con packing lists procesados.
@@ -55,21 +52,26 @@
         </field>
     </record>
     
-    <!-- Vista de lista heredada para mostrar información de mármol -->
+    <!-- Vista de LISTA heredada - TEMPORARILY COMMENTED OUT -->
+    <!-- We'll add this back once we find the correct external ID -->
+    <!--
     <record id="stock_picking_list_view_marble" model="ir.ui.view">
         <field name="name">stock.picking.list.marble</field>
         <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="inherit_id" ref="stock.CORRECT_EXTERNAL_ID_HERE"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="after">
-                <field name="has_marble_products" optional="hide"/>
-                <field name="packing_list_applied" optional="hide" invisible="not has_marble_products"/>
-                <field name="packing_list_id" optional="hide" invisible="not packing_list_id"/>
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="has_marble_products" column_invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="packing_list_applied" optional="show" column_invisible="not has_marble_products"/>
+                <field name="packing_list_id" optional="hide" column_invisible="not has_marble_products"/>
             </xpath>
         </field>
     </record>
+    -->
     
-    <!-- Filtros de búsqueda para recepciones de mármol -->
+    <!-- Vista de BÚSQUEDA heredada -->
     <record id="stock_picking_search_view_marble" model="ir.ui.view">
         <field name="name">stock.picking.search.marble</field>
         <field name="model">stock.picking</field>
@@ -80,9 +82,9 @@
                 <filter string="Con Productos de Mármol" name="marble_pickings" 
                         domain="[('has_marble_products', '=', True)]"/>
                 <filter string="Packing List Pendiente" name="packing_pending" 
-                        domain="[('has_marble_products', '=', True), ('packing_list_applied', '=', False)]"/>
+                        domain="[('picking_type_code', '=', 'incoming'), ('has_marble_products', '=', True), ('packing_list_applied', '=', False)]"/>
                 <filter string="Packing List Aplicado" name="packing_applied" 
-                        domain="[('has_marble_products', '=', True), ('packing_list_applied', '=', True)]"/>
+                        domain="[('picking_type_code', '=', 'incoming'), ('has_marble_products', '=', True), ('packing_list_applied', '=', True)]"/>
             </xpath>
         </field>
     </record>

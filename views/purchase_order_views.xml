@@ -71,17 +71,17 @@
         <field name="model">purchase.order.line</field>
         <field name="inherit_id" ref="purchase.purchase_order_line_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='product_qty']" position="after">
-                <field name="marble_height" optional="hide" invisible="not is_marble_template"/>
-                <field name="marble_width" optional="hide" invisible="not is_marble_template"/>
-                <field name="marble_thickness" optional="hide" invisible="not is_marble_template"/>
-                <field name="marble_custom_lot" optional="hide" invisible="not is_marble_template"/>
-                <field name="marble_finish" optional="hide" invisible="not is_marble_template"/>
-                <field name="estimated_pieces" optional="hide" invisible="not is_marble_template"/>
-                <field name="avg_sqm_per_piece" optional="hide" invisible="not is_marble_template"/>
-            </xpath>
             <xpath expr="//field[@name='product_qty']" position="before">
-                <field name="is_marble_template" invisible="1"/>
+                <field name="is_marble_template" column_invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='product_qty']" position="after">
+                <field name="marble_height" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="marble_width" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="marble_thickness" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="marble_custom_lot" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="marble_finish" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="estimated_pieces" optional="hide" column_invisible="not parent.is_marble_template"/>
+                <field name="avg_sqm_per_piece" optional="hide" column_invisible="not parent.is_marble_template"/>
             </xpath>
         </field>
     </record>
@@ -90,13 +90,12 @@
     <record id="purchase_order_list_view_marble" model="ir.ui.view">
         <field name="name">purchase.order.list.marble</field>
         <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='amount_total']" position="after">
-                <field name="has_marble_products" optional="hide"/>
-                <field name="container_number" optional="hide" invisible="not has_marble_products"/>
-                <field name="packing_list_imported" optional="hide" invisible="not has_marble_products"/>
-                <field name="total_marble_sqm" optional="hide" invisible="not has_marble_products"/>
+                <field name="container_number" optional="hide" column_invisible="not parent.has_marble_products"/>
+                <field name="packing_list_imported" optional="hide" column_invisible="not parent.has_marble_products"/>
+                <field name="total_marble_sqm" optional="hide" column_invisible="not parent.has_marble_products"/>
             </xpath>
         </field>
     </record>

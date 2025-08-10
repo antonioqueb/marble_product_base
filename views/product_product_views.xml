@@ -45,10 +45,11 @@
                       invisible="not is_generated_marble_product">
                     <group>
                         <group string="Dimensiones Específicas">
-                            <field name="marble_height" readonly="1"/>
-                            <field name="marble_width" readonly="1"/>
-                            <field name="marble_thickness" readonly="1"/>
-                            <field name="marble_sqm" readonly="1"/>
+                            <field name="is_generated_marble_template" invisible="1"/>
+                            <field name="marble_height" readonly="0"/>
+                            <field name="marble_width" readonly="0"/>
+                            <field name="marble_thickness" readonly="0"/>
+                            <field name="marble_sqm" readonly="0"/>
                         </group>
                         <group string="Características">
                             <field name="marble_category" readonly="1"/>
@@ -70,7 +71,7 @@
                         </group>
                     </group>
                     <group string="Referencias">
-                        <field name="marble_parent_template_id" readonly="1"/>
+                        <field name="marble_prototype_template_id" readonly="1"/>
                         <field name="packing_list_import_line_id" readonly="1"/>
                     </group>
                     <group string="Stock Actual">
@@ -97,7 +98,28 @@
         </field>
     </record>
 
-    <!-- Vista de lista para productos únicos de mármol -->
+    <!-- ✅ VISTA DE LISTA MEJORADA PARA MOSTRAR DATOS PROPAGADOS -->
+    <record id="product_product_list_view_marble_unique" model="ir.ui.view">
+        <field name="name">product.product.list.marble.unique</field>
+        <field name="model">product.product</field>
+        <field name="arch" type="xml">
+            <list string="Productos de Mármol Únicos">
+                <field name="default_code" string="Referencia / Serie"/>
+                <field name="name" string="Nombre Producto"/>
+                <field name="marble_prototype_template_id" string="Prototipo" optional="show"/>
+                <field name="marble_status" widget="badge" decoration-success="marble_status == 'available'" decoration-info="marble_status == 'reserved'"/>
+                <field name="marble_height" optional="show"/>
+                <field name="marble_width" optional="show"/>
+                <field name="marble_thickness" optional="hide"/>
+                <field name="marble_sqm" optional="show" sum="Total M²"/>
+                <field name="marble_custom_lot" string="Lote" optional="show"/>
+                <field name="wooden_crate_code" optional="show"/>
+                <field name="qty_available" string="Stock"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de lista heredada para productos de mármol -->
     <record id="product_product_list_view_marble" model="ir.ui.view">
         <field name="name">product.product.list.marble</field>
         <field name="model">product.product</field>
@@ -211,7 +233,7 @@
                         context="{'group_by': 'marble_custom_lot'}"
                         domain="[('is_generated_marble_product', '=', True)]"/>
                 <filter string="Plantilla Padre" name="group_parent_template" 
-                        context="{'group_by': 'marble_parent_template_id'}"
+                        context="{'group_by': 'marble_prototype_template_id'}"
                         domain="[('is_generated_marble_product', '=', True)]"/>
                 <filter string="Origen" name="group_marble_origin" 
                         context="{'group_by': 'marble_origin'}"
@@ -225,25 +247,19 @@
 
     <!-- Acción para productos únicos de mármol -->
     <record id="action_marble_products" model="ir.actions.act_window">
-        <field name="name">Productos de Mármol</field>
+        <field name="name">Productos de Mármol Únicos</field>
         <field name="res_model">product.product</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,form,kanban</field>
         <field name="domain">[('is_generated_marble_product', '=', True)]</field>
+        <!-- ✅ USAMOS LA NUEVA VISTA DE LISTA PERSONALIZADA -->
         <field name="view_ids" eval="[(5, 0, 0),
-                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
-                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
-                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble_unique')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')}),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')})]"/>
         <field name="context">{'search_default_marble_available': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                No hay productos de mármol creados aún
-            </p>
-            <p>
-                Los productos únicos de mármol se crean automáticamente cuando se
-                procesa un packing list desde una orden de compra.
-                <br/>
-                Cada producto representa una placa individual con sus dimensiones,
-                número de serie y trazabilidad específicos.
+                No hay productos de mármol creados aún.
             </p>
         </field>
     </record>
@@ -252,12 +268,12 @@
     <record id="action_marble_products_available" model="ir.actions.act_window">
         <field name="name">Mármol Disponible</field>
         <field name="res_model">product.product</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,form,kanban</field>
         <field name="domain">[('is_generated_marble_product', '=', True), ('marble_status', '=', 'available'), ('current_stock', '>', 0)]</field>
         <field name="view_ids" eval="[(5, 0, 0),
-                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
-                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
-                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble_unique')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')}),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')})]"/>
         <field name="context">{'create': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -274,12 +290,12 @@
     <record id="action_marble_products_by_status" model="ir.actions.act_window">
         <field name="name">Mármol por Estado</field>
         <field name="res_model">product.product</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,form,kanban</field>
         <field name="domain">[('is_generated_marble_product', '=', True)]</field>
         <field name="view_ids" eval="[(5, 0, 0),
-                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')}),
-                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble')}),
-                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')})]"/>
+                                     (0, 0, {'view_mode': 'list', 'view_id': ref('product_product_list_view_marble_unique')}),
+                                     (0, 0, {'view_mode': 'form', 'view_id': ref('product_product_form_view_marble')}),
+                                     (0, 0, {'view_mode': 'kanban', 'view_id': ref('product_product_kanban_view_marble')})]"/>
         <field name="context">{'search_default_group_marble_status': 1, 'create': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
