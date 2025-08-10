@@ -15,9 +15,10 @@
             <!-- Campos específicos de mármol después del código de barras -->
             <xpath expr="//field[@name='barcode']" position="after">
                 <field name="is_generated_marble_product" invisible="1"/>
+                <field name="short_id" readonly="1" invisible="not is_generated_marble_product"/>
                 <field name="marble_serial_number" readonly="1"
                        invisible="not is_generated_marble_product"/>
-                <field name="marble_status" 
+                <field name="marble_status"
                        invisible="not is_generated_marble_product"/>
             </xpath>
 
@@ -52,9 +53,19 @@
                             <field name="marble_sqm" readonly="0"/>
                         </group>
                         <group string="Características">
+                            <field name="marble_family_id" readonly="1"/>
+                            <field name="marble_material_id" readonly="1"/>
+                            <field name="marble_format_id" readonly="1"/>
+                            <field name="marble_thickness_tax_id" readonly="1"/>
+                            <field name="marble_finish_tax_id" readonly="1"/>
+                            <field name="marble_color_tax_id" readonly="1"/>
                             <field name="marble_category" readonly="1"/>
                             <field name="marble_finish" readonly="1"/>
                             <field name="marble_origin" readonly="1"/>
+                            <field name="marble_tone" readonly="1"/>
+                            <field name="marble_vein" readonly="1"/>
+                            <field name="marble_density"/>
+                            <field name="marble_weight" readonly="1"/>
                             <field name="price_per_sqm" readonly="1"/>
                         </group>
                     </group>
@@ -77,6 +88,15 @@
                     <group string="Stock Actual">
                         <field name="current_stock" readonly="1"/>
                     </group>
+                    <group string="Fotos y Observaciones">
+                        <field name="image_ids" widget="many2many_binary"/>
+                        <field name="defectos_observaciones"/>
+                    </group>
+                    <group string="Auditoría">
+                        <field name="marble_status_date" readonly="1"/>
+                        <field name="create_date" readonly="1"/>
+                        <field name="write_date" readonly="1"/>
+                    </group>
                 </page>
             </xpath>
 
@@ -85,10 +105,10 @@
                 <button name="action_set_available" string="Marcar Disponible" 
                         type="object" class="btn-primary"
                         invisible="not is_generated_marble_product or marble_status != 'draft'"/>
-                <button name="action_set_sold" string="Marcar Vendido" 
+                <button name="action_set_sold" string="Marcar Entregada"
                         type="object" class="btn-secondary"
-                        invisible="not is_generated_marble_product or marble_status not in ['available', 'reserved']"/>
-                <button name="action_set_damaged" string="Marcar Dañado" 
+                        invisible="not is_generated_marble_product or marble_status not in ['available', 'comprometida', 'en_picking', 'cargada']"/>
+                <button name="action_set_damaged" string="Marcar Scrap"
                         type="object" class="btn-warning"
                         invisible="not is_generated_marble_product"/>
                 <button name="action_archive_marble_product" string="Archivar" 
@@ -104,6 +124,7 @@
         <field name="model">product.product</field>
         <field name="arch" type="xml">
             <list string="Productos de Mármol Únicos">
+                <field name="short_id" string="ID Corto"/>
                 <field name="default_code" string="Referencia / Serie"/>
                 <field name="name" string="Nombre Producto"/>
                 <field name="marble_prototype_template_id" string="Prototipo" optional="show"/>
@@ -112,6 +133,9 @@
                 <field name="marble_width" optional="show"/>
                 <field name="marble_thickness" optional="hide"/>
                 <field name="marble_sqm" optional="show" sum="Total M²"/>
+                <field name="marble_tone" optional="show"/>
+                <field name="marble_vein" optional="show"/>
+                <field name="marble_weight" optional="show"/>
                 <field name="marble_custom_lot" string="Lote" optional="show"/>
                 <field name="wooden_crate_code" optional="show"/>
                 <field name="qty_available" string="Stock"/>
@@ -132,11 +156,17 @@
             
             <!-- Campos específicos de mármol -->
             <xpath expr="//field[@name='name']" position="after">
+                <field name="short_id" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
                 <field name="marble_serial_number" optional="hide"
                        column_invisible="not parent.is_generated_marble_product"/>
                 <field name="marble_status" optional="hide"
                        column_invisible="not parent.is_generated_marble_product"/>
                 <field name="marble_sqm" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="marble_tone" optional="hide"
+                       column_invisible="not parent.is_generated_marble_product"/>
+                <field name="marble_vein" optional="hide"
                        column_invisible="not parent.is_generated_marble_product"/>
                 <field name="marble_custom_lot" optional="hide"
                        column_invisible="not parent.is_generated_marble_product"/>

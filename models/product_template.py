@@ -71,6 +71,16 @@ class ProductTemplate(models.Model):
         string='Origen',
         help='País o región de origen del mármol'
     )
+
+    marble_tone = fields.Char(
+        string='Tono',
+        help='Color o tono del mármol'
+    )
+
+    marble_vein = fields.Char(
+        string='Veta',
+        help='Descripción de la veta del mármol'
+    )
     
     marble_category = fields.Selection([
         ('marble', 'Mármol'),
@@ -81,6 +91,13 @@ class ProductTemplate(models.Model):
         ('onyx', 'Ónix'),
         ('other', 'Otro')
     ], string='Categoría de Piedra', default='marble')
+
+    marble_family_id = fields.Many2one('marble.taxonomy', domain="[('level','=','family')]")
+    marble_material_id = fields.Many2one('marble.taxonomy', domain="[('level','=','material'), ('parent_id','=',marble_family_id)]")
+    marble_format_id = fields.Many2one('marble.taxonomy', domain="[('level','=','format'), ('parent_id','=',marble_material_id)]")
+    marble_thickness_tax_id = fields.Many2one('marble.taxonomy', domain="[('level','=','thickness'), ('parent_id','=',marble_format_id)]")
+    marble_finish_tax_id = fields.Many2one('marble.taxonomy', domain="[('level','=','finish'), ('parent_id','=',marble_thickness_tax_id)]")
+    marble_color_tax_id = fields.Many2one('marble.taxonomy', domain="[('level','=','color'), ('parent_id','=',marble_finish_tax_id)]")
     
     # Campo computado para contar productos generados
     generated_products_count = fields.Integer(
@@ -110,6 +127,55 @@ class ProductTemplate(models.Model):
                 record.generated_products_count = generated_templates
             else:
                 record.generated_products_count = 0
+
+    @api.constrains('marble_family_id', 'marble_material_id', 'marble_format_id',
+                    'marble_thickness_tax_id', 'marble_finish_tax_id', 'marble_color_tax_id')
+    def _check_taxonomy(self):
+        for rec in self:
+            if rec.marble_material_id and rec.marble_material_id.parent_id != rec.marble_family_id:
+                raise ValidationError(_('Material fuera de la familia permitida.'))
+            if rec.marble_format_id and rec.marble_format_id.parent_id != rec.marble_material_id:
+                raise ValidationError(_('Formato fuera del material permitido.'))
+            if rec.marble_thickness_tax_id and rec.marble_thickness_tax_id.parent_id != rec.marble_format_id:
+                raise ValidationError(_('Espesor fuera del formato permitido.'))
+            if rec.marble_finish_tax_id and rec.marble_finish_tax_id.parent_id != rec.marble_thickness_tax_id:
+                raise ValidationError(_('Acabado fuera del espesor permitido.'))
+            if rec.marble_color_tax_id and rec.marble_color_tax_id.parent_id != rec.marble_finish_tax_id:
+                raise ValidationError(_('Color/Tono fuera del acabado permitido.'))
+
+    def _generate_name_from_taxonomy(self):
+        for rec in self:
+            parts = [
+                rec.marble_family_id.name if rec.marble_family_id else '',
+                rec.marble_material_id.name if rec.marble_material_id else '',
+                rec.marble_format_id.name if rec.marble_format_id else '',
+                rec.marble_thickness_tax_id.name if rec.marble_thickness_tax_id else '',
+                rec.marble_finish_tax_id.name if rec.marble_finish_tax_id else '',
+                rec.marble_color_tax_id.name if rec.marble_color_tax_id else '',
+            ]
+            dims = []
+            if rec.marble_height:
+                dims.append(str(rec.marble_height))
+            if rec.marble_width:
+                dims.append(str(rec.marble_width))
+            if rec.marble_thickness:
+                dims.append(str(rec.marble_thickness))
+            name = ' '.join([p for p in parts if p])
+            if dims:
+                name = f"{name} {'x'.join(dims)}"
+            if name:
+                rec.name = name
+
+    @api.model
+    def create(self, vals):
+        rec = super().create(vals)
+        rec._generate_name_from_taxonomy()
+        return rec
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._generate_name_from_taxonomy()
+        return res
     
     @api.onchange('is_marble_template')
     def _onchange_is_marble_template(self):
@@ -117,43 +183,10 @@ class ProductTemplate(models.Model):
         if self.is_marble_template:
             self.type = 'consu'
             self.tracking = 'none'  # Las plantillas no se trackean
-            
-            # Buscar UoM correcta sin crear duplicados
-            try:
-                # 1. Intentar usar la referencia estándar de Odoo
-                sqm_uom = self.env.ref('uom.product_uom_square_meter', raise_if_not_found=False)
-                
-                if not sqm_uom:
-                    # 2. Buscar por nombre en la categoría Surface
-                    surface_category = self.env.ref('uom.uom_categ_surface', raise_if_not_found=False)
-                    if surface_category:
-                        sqm_uom = self.env['uom.uom'].search([
-                            ('category_id', '=', surface_category.id),
-                            ('uom_type', '=', 'reference')
-                        ], limit=1)
-                
-                if not sqm_uom:
-                    # 3. Buscar cualquier UoM de superficie como referencia
-                    sqm_uom = self.env['uom.uom'].search([
-                        ('name', 'in', ['m²', 'Square Meter', 'Metro Cuadrado', 'Square Metres'])
-                    ], limit=1)
-                
-                if sqm_uom:
-                    self.uom_id = sqm_uom.id
-                    self.uom_po_id = sqm_uom.id
-                else:
-                    # 4. Fallback: usar metros lineales
-                    meter_uom = self.env.ref('uom.product_uom_meter', raise_if_not_found=False)
-                    if meter_uom:
-                        self.uom_id = meter_uom.id
-                        self.uom_po_id = meter_uom.id
-                    
-            except Exception as e:
-                # Si hay cualquier error, usar metros lineales como fallback seguro
-                meter_uom = self.env.ref('uom.product_uom_meter', raise_if_not_found=False)
-                if meter_uom:
-                    self.uom_id = meter_uom.id
-                    self.uom_po_id = meter_uom.id
+            sqm_uom = self.env.ref('uom.product_uom_square_meter', raise_if_not_found=False)
+            if sqm_uom:
+                self.uom_id = sqm_uom.id
+                self.uom_po_id = sqm_uom.id
     
     @api.constrains('marble_height', 'marble_width', 'marble_thickness')
     def _check_marble_dimensions(self):

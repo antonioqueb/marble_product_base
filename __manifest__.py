@@ -32,6 +32,8 @@
         # 4. Vistas que heredan de product (generalmente seguro)
         'views/product_template_views.xml',
         'views/product_product_views.xml',
+        'views/stock_lot_views.xml',
+        'views/product_label_report.xml',
         
         # 5. Vistas que heredan de purchase y stock (las más problemáticas, van al final)
         'views/purchase_order_views.xml',

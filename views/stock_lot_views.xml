@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_lot_form_view_marble" model="ir.ui.view">
+        <field name="name">stock.lot.form.marble</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Mármol">
+                    <group>
+                        <field name="marble_tone"/>
+                        <field name="marble_vein"/>
+                        <field name="marble_density"/>
+                        <field name="marble_weight" readonly="1"/>
+                        <field name="defectos_observaciones"/>
+                        <field name="image_ids" widget="many2many_binary"/>
+                        <field name="create_date" readonly="1"/>
+                        <field name="write_date" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

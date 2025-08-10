@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_marble_product_label">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <h2><t t-esc="doc.name"/></h2>
+                <p><strong>ID:</strong> <t t-esc="doc.short_id"/></p>
+                <p><strong>M²:</strong> <t t-esc="doc.marble_sqm"/></p>
+                <img t-if="doc.barcode" t-att-src="barcode('QR', doc.barcode)" style="width:100px;height:100px"/>
+            </div>
+        </t>
+    </template>
+
+    <report id="action_report_marble_product_label"
+            model="product.product"
+            string="Etiqueta Mármol"
+            report_type="qweb-pdf"
+            name="marble_product_base.report_marble_product_label"
+            file="marble_product_base.report_marble_product_label"
+            print_report_name="(object.short_id or object.name)"/>
+</odoo>

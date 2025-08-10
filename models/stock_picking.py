@@ -122,11 +122,13 @@ class StockPicking(models.Model):
             move = self.env['stock.move'].create(move_vals)
             
             # ✅ CORRECCIÓN: Usar campos correctos para Odoo 18
+            move_line_model = self.env['stock.move.line']
+            qty_field = 'qty_done' if 'qty_done' in move_line_model._fields else 'quantity'
             move_line_vals = {
                 'move_id': move.id,
                 'product_id': product.id,
                 'product_uom_id': product.uom_id.id,
-                'quantity': 1,  # ✅ Cambiado de 'qty_done' a 'quantity'
+                qty_field: 1,
                 'lot_id': lot.id,
                 'location_id': self.location_id.id,
                 'location_dest_id': self.location_dest_id.id,
