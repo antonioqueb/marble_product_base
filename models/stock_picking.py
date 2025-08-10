@@ -323,12 +323,19 @@ class StockPicking(models.Model):
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
-    
+
     is_marble_product = fields.Boolean(
         string='Es Producto de Mármol',
-        related='product_id.is_generated_marble_product',
-        store=True
+        compute='_compute_is_marble_product',
+        store=True,
+        help='Indica si el movimiento corresponde a un producto de mármol'
     )
+
+    @api.depends('product_id')
+    def _compute_is_marble_product(self):
+        """Determinar si el movimiento es de un producto de mármol"""
+        for move in self:
+            move.is_marble_product = bool(getattr(move.product_id, 'is_generated_marble_product', False))
     
     marble_serial_number = fields.Char(
         string='Número de Serie Mármol',
@@ -357,12 +364,19 @@ class StockMove(models.Model):
 
 class StockMoveLine(models.Model):
     _inherit = 'stock.move.line'
-    
+
     is_marble_product = fields.Boolean(
         string='Es Producto de Mármol',
-        related='product_id.is_generated_marble_product',
-        store=True
+        compute='_compute_is_marble_product',
+        store=True,
+        help='Indica si la línea corresponde a un producto de mármol'
     )
+
+    @api.depends('product_id')
+    def _compute_is_marble_product(self):
+        """Determinar si la línea es de un producto de mármol"""
+        for line in self:
+            line.is_marble_product = bool(getattr(line.product_id, 'is_generated_marble_product', False))
     
     marble_dimensions = fields.Char(
         string='Dimensiones',

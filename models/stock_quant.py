@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields
+from odoo import models, fields, api
 
 
 class StockQuant(models.Model):
@@ -12,10 +12,16 @@ class StockQuant(models.Model):
     
     is_marble_product = fields.Boolean(
         string='Es Producto de Mármol',
-        related='product_id.is_generated_marble_product',
+        compute='_compute_is_marble_product',
         store=True,
         help='Indica si este stock es de un producto de mármol único'
     )
+
+    @api.depends('product_id')
+    def _compute_is_marble_product(self):
+        """Determinar si el quant corresponde a un producto de mármol"""
+        for quant in self:
+            quant.is_marble_product = bool(getattr(quant.product_id, 'is_generated_marble_product', False))
     
     marble_serial_number = fields.Char(
         string='Nº Serie',
